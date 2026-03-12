@@ -47,6 +47,7 @@ public class Main extends Game {
         super.render(); // lets the current screen render itself
     }
 
+
     @Override
     public void dispose() {
         getScreen().dispose();

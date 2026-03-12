@@ -7,14 +7,13 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+
 
 public class LoadingScreen implements Screen {
 
     private SpriteBatch batch;
     private Texture temploading;
-
     private OrthographicCamera camera;
     private Viewport viewport;
 
@@ -22,18 +21,20 @@ public class LoadingScreen implements Screen {
     public void show() {
 
         batch = new SpriteBatch();
-        temploading = new Texture("temploading.png");
+        temploading = new Texture("resizedtemploading.png");
 
         camera = new OrthographicCamera();
+        viewport = new com.badlogic.gdx.utils.viewport.FillViewport(1280, 720, camera);
 
-        viewport = new FitViewport(1280, 720, camera);
         viewport.apply();
-        camera.position.set(640, 360, 0); // center camera
+        camera.position.set(640, 360, 0);
         camera.update();
     }
 
     @Override
     public void render(float delta) {
+
+        viewport.apply(); // VERY IMPORTANT
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -47,15 +48,13 @@ public class LoadingScreen implements Screen {
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height, true); // keep camera centered
+        viewport.update(width, height, true);
     }
 
     @Override
     public void pause() {}
-
     @Override
     public void resume() {}
-
     @Override
     public void hide() {}
 

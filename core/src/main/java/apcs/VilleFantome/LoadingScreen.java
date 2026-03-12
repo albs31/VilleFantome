@@ -26,21 +26,21 @@ public class LoadingScreen implements Screen {
         camera = new OrthographicCamera();
 
         // Base resolution of your game
-        viewport = new FitViewport(1280, 720, camera);
+        viewport = new com.badlogic.gdx.utils.viewport.StretchViewport(1280, 720, camera);
         viewport.apply();
     }
 
     @Override
     public void render(float delta) {
 
-        Gdx.gl.glClearColor(0, 0, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    Gdx.gl.glClearColor(0, 0, 0, 1);
+    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        batch.setProjectionMatrix(camera.combined);
+    batch.setProjectionMatrix(camera.combined);
 
-        batch.begin();
-        batch.draw(temploading, 0, 0, 1280, 720);
-        batch.end();
+    batch.begin();
+    batch.draw(temploading, 0, 0, 1280, 720);
+    batch.end();
     }
 
     @Override

@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class LoadingScreen implements Screen {
@@ -25,27 +26,28 @@ public class LoadingScreen implements Screen {
 
         camera = new OrthographicCamera();
 
-        // Base resolution of your game
-        viewport = new com.badlogic.gdx.utils.viewport.StretchViewport(1280, 720, camera);
+        viewport = new FitViewport(1280, 720, camera);
         viewport.apply();
+        camera.position.set(640, 360, 0); // center camera
+        camera.update();
     }
 
     @Override
     public void render(float delta) {
 
-    Gdx.gl.glClearColor(0, 0, 0, 1);
-    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-    batch.setProjectionMatrix(camera.combined);
+        batch.setProjectionMatrix(camera.combined);
 
-    batch.begin();
-    batch.draw(temploading, 0, 0, 1280, 720);
-    batch.end();
+        batch.begin();
+        batch.draw(temploading, 0, 0, 1280, 720);
+        batch.end();
     }
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height);
+        viewport.update(width, height, true); // keep camera centered
     }
 
     @Override

@@ -52,4 +52,10 @@ public class Main extends Game {
     public void dispose() {
         getScreen().dispose();
     }
+
+    // MusicPlayer music = new MusicPlayer();
+
+        // 👇 Replace this with YOUR music file name
+        music.playMusic("assets/sounds/YOUR_SONG_NAME.wav");
+
 }

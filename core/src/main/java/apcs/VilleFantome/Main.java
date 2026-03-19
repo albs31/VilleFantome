@@ -1,61 +1,30 @@
-/* package apcs.VilleFantome;
-
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
-
-/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms.
-public class Main extends ApplicationAdapter {
-    private SpriteBatch batch;
-    private Texture image;
-
-    @Override
-    public void create() {
-        batch = new SpriteBatch();
-        image = new Texture("libgdx.png");
-    }
-
-    @Override
-    public void render() {
-        ScreenUtils.clear(0f, 0.5f, 1f, 1f);
-        batch.begin();
-        batch.draw(image, 140, 210);
-        batch.end();
-    }
-
-    @Override
-    public void dispose() {
-        batch.dispose();
-        image.dispose();
-    }
-}
- */
 package apcs.VilleFantome;
 
 import com.badlogic.gdx.Game;
 
 public class Main extends Game {
 
+    private MusicPlayer player; // Defining it here so we can use it later
+
     @Override
     public void create() {
-        setScreen(new LoadingScreen()); // start with loading screen
+        // 1. Initialize and play the music
+        player = new MusicPlayer();
+        player.playMusic();
+
+        // 2. Start the loading screen
+        setScreen(new LoadingScreen()); 
     }
 
     @Override
     public void render() {
-        super.render(); // lets the current screen render itself
+        super.render(); // This is required for screens to show up!
     }
-
 
     @Override
     public void dispose() {
-        getScreen().dispose();
+        // Clean up everything when the game closes
+        if (getScreen() != null) getScreen().dispose();
+        if (player != null) player.stopMusic();
     }
-
-    // MusicPlayer music = new MusicPlayer();
-
-        // 👇 Replace this with YOUR music file name
-        music.playMusic("assets/sounds/YOUR_SONG_NAME.wav");
-
 }

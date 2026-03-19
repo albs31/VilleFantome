@@ -21,7 +21,7 @@ public class LoadingScreen implements Screen {
     public void show() {
 
         batch = new SpriteBatch();
-        temploading = new Texture("resizedtemploading.png");
+        temploading = new Texture("finalloading.png");
 
         camera = new OrthographicCamera();
         viewport = new com.badlogic.gdx.utils.viewport.FillViewport(1280, 720, camera);

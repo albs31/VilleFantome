@@ -35,18 +35,21 @@ public class WarningScreen implements Screen {
     }
 
     @Override
-    public void render(float delta) {
-        Gdx.gl.glClearColor(0, 0, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+public void render(float delta) {
+    Gdx.gl.glClearColor(0, 0, 0, 1);
+    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // 2. Update camera and tell the batch to use it
-        camera.update();
-        batch.setProjectionMatrix(camera.combined);
+    camera.update();
+    batch.setProjectionMatrix(camera.combined);
 
-        batch.begin();
-        // 3. Draw at the virtual coordinates (0,0) to 1280x720
-        batch.draw(warningTexture, 0, 0, 1280, 720);
-        batch.end();
+    batch.begin();
+    batch.draw(warningTexture, 0, 0, 1280, 720);
+    batch.end();
+
+    // This detects a click/touch anywhere on the screen
+    if (Gdx.input.justTouched()) {
+        game.setScreen(new GameScreen(game)); 
+    }
     }
 
     @Override

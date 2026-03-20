@@ -3,22 +3,22 @@ package apcs.VilleFantome;
 import com.badlogic.gdx.Game;
 
 public class Main extends Game {
-
-    private MusicPlayer player; 
+    private MusicPlayer player;
 
     @Override
     public void create() {
-        // LibGDX is now ready! We can load files here.
+        // Initialize and play the music
         player = new MusicPlayer();
         player.playMusic();
 
-        // Start your loading screen
-        setScreen(new LoadingScreen()); 
+        // Start the loading screen
+        setScreen(new LoadingScreen(this)); 
     }
 
     @Override
     public void render() {
-        super.render(); // Essential for the screen to show up
+        // Essential: this allows the LoadingScreen to draw itself
+        super.render(); 
     }
 
     @Override

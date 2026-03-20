@@ -1,10 +1,9 @@
-package apcs.VilleFantome; 
+package apcs.VilleFantome;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 
-
-public class MusicPlayer {
+public class MusicPlayer { 
 
     private Music music;
 

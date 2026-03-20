@@ -46,7 +46,7 @@ public class LoadingScreen implements Screen {
         // ADJUST THESE to move the box: (x, y, width, height)
         // show() method in LoadingScreen.java
 // Increase X to move right, Decrease Y to move down
-playButtonBounds = new Rectangle(240, 335, 140, 60); 
+playButtonBounds = new Rectangle(330, 307, 150, 60); 
         touchPoint = new Vector3();
     }
 

@@ -61,11 +61,6 @@ playButtonBounds = new Rectangle(330, 307, 150, 60);
         batch.begin();
         batch.draw(background, 0, 0, 1280, 720);
 
-        // --- DEBUG BOX: REMOVE THESE 3 LINES ONCE ALIGNED ---
-        batch.setColor(1, 1, 1, 0.4f); // 40% transparent
-        batch.draw(debugTex, playButtonBounds.x, playButtonBounds.y, playButtonBounds.width, playButtonBounds.height);
-        batch.setColor(1, 1, 1, 1); // Reset transparency
-        // ---------------------------------------------------
 
         batch.end();
 

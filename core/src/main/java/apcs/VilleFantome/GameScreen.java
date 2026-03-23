@@ -36,7 +36,6 @@ public class GameScreen implements Screen {
     private Texture[] dialogueScreens;
     private int currentDialogueIndex = 0;
     private Sound typeSound;
-    private int sceneState = 1;
     private float soundTimer = 0.0F;
     private boolean soundPlaying = true;
 
@@ -51,6 +50,10 @@ public class GameScreen implements Screen {
     private float playerSpeed = 300.0F;
     private float animationTimer = 0.0F;
     private float frameDuration = 0.15F;
+
+    // Fade variables
+    private float fadeAlpha = 1.0f; // Start fully black
+    private float fadeSpeed = 2.5f; // Adjust this to make it faster or slower
 
     public GameScreen(Main game) {
         this.game = game;
@@ -140,7 +143,13 @@ public class GameScreen implements Screen {
 
     @Override
 public void render(float delta) {
-    // 1. ESCAPE COMMAND (Stays the same)
+    // 1. Update Fade Logic (Must happen every frame)
+    if (fadeAlpha > 0) {
+        fadeAlpha -= delta * fadeSpeed;
+        if (fadeAlpha < 0) fadeAlpha = 0;
+    }
+
+    // 2. ESCAPE/PAUSE COMMAND
     if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
         if (state == State.RUNNING) {
             state = State.PAUSED;
@@ -151,101 +160,113 @@ public void render(float delta) {
         }
     }
 
-    // 2. GAME LOGIC (Only when running)
+    // 3. GAME LOGIC (Only runs when not paused)
     if (state == State.RUNNING) {
         updateGame(delta);
     }
 
-    // 3. INPUT PROCESSOR (Stays the same)
+    // 4. INPUT PROCESSOR SETUP
     if (!inputSet) {
         Gdx.input.setInputProcessor(stage);
         inputSet = true;
     }
 
-    // 4. DRAWING
+    // 5. DRAWING
     Gdx.gl.glClearColor(0, 0, 0, 1);
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
     batch.setProjectionMatrix(stage.getCamera().combined);
+    
+    // --- START BATCH ---
     batch.begin();
 
-    // --- SMART DIALOGUE / WORLD DRAWING ---
-    
-    // If we have finished all dialogue screens, draw the Town
+    // A. Draw World OR Dialogue
     if (currentDialogueIndex >= dialogueScreens.length) { 
+        // We are in the Town
         batch.draw(backgroundTexture, 0, 0, 1280, 720);
         batch.draw(currentPlayerTexture, playerX, playerY, 550, 400);
-    } 
-    // Otherwise, draw whichever dialogue box we are currently on
-    else { 
+    } else { 
+        // We are in Dialogue
         batch.draw(dialogueScreens[currentDialogueIndex], 0, 0, 1280, 720);
     }
 
-    // 5. PAUSE OVERLAY
+    // B. Draw Pause Tint (If paused)
     if (state == State.PAUSED) {
         batch.draw(pauseBg, 0, 0, 1280, 720);
     }
-    
+
+    // C. Draw Fade Transition (Must be last inside batch to cover everything)
+    if (fadeAlpha > 0) {
+        batch.setColor(0, 0, 0, fadeAlpha); 
+        batch.draw(pauseBg, 0, 0, 1280, 720); 
+        batch.setColor(1, 1, 1, 1); // Always reset color to white
+    }
+
+    // --- END BATCH ---
     batch.end();
 
-    // 6. STAGE BUTTONS
+    // 6. DRAW STAGE (Buttons)
+    // Stage has its own internal batch.begin/end, so it stays outside yours.
     if (state == State.PAUSED) {
         stage.act(delta);
         stage.draw();
     }
 }
-
-    private void updateGame(float delta) {
-    // 1. SOUND TIMER (Stops sound after 4 seconds)
-    if (soundPlaying) {
-        soundTimer += delta;
-        if (soundTimer >= 4.0F) { 
-            typeSound.stop(); 
-            soundPlaying = false; 
-        }
-    }
-
-    // 2. DIALOGUE CLICK LOGIC
-    if (currentDialogueIndex < dialogueScreens.length) {
-        if (Gdx.input.justTouched()) {
-            currentDialogueIndex++; 
-            
-            // Reset for the next screen
-            typeSound.stop();
-            soundTimer = 0.0F;
-
-            // CHECK THE SWITCH: Should this new index play a sound?
-            if (currentDialogueIndex < dialogueScreens.length && dialogueHasSound[currentDialogueIndex]) {
-                typeSound.play(1.0F);
-                soundPlaying = true;
-            } else {
-                soundPlaying = false; // No sound for this screen
+private void updateGame(float delta) {
+        // 1. SOUND TIMER (Stops sound after 4 seconds)
+        if (soundPlaying) {
+            soundTimer += delta;
+            if (soundTimer >= 4.0F) { 
+                typeSound.stop(); 
+                soundPlaying = false; 
             }
         }
-    }
 
-    // 3. MOVEMENT LOGIC (Only runs when dialogue is finished)
-    if (currentDialogueIndex >= dialogueScreens.length) { 
-        boolean moving = false;
+        // 2. DIALOGUE CLICK LOGIC
+        if (currentDialogueIndex < dialogueScreens.length) {
+            if (Gdx.input.justTouched()) {
+                currentDialogueIndex++; 
+
+                fadeAlpha = 1.0f; // This triggers the fade for the NEW screen
+                
+                // Reset for the next screen
+                typeSound.stop();
+                soundTimer = 0.0F;
+
+                // Should this new index play a sound?
+                if (currentDialogueIndex < dialogueScreens.length && dialogueHasSound[currentDialogueIndex]) {
+                    typeSound.play(1.0F);
+                    soundPlaying = true;
+                } else {
+                    soundPlaying = false; 
+                }
+            }
+        }
+
+        // 3. MOVEMENT LOGIC (Only runs when dialogue is finished)
+        if (currentDialogueIndex >= dialogueScreens.length) { 
+            boolean moving = false;
+            
+            if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+                playerX -= playerSpeed * delta;
+                animationTimer += delta;
+                currentPlayerTexture = leftFrames[(int)(animationTimer / frameDuration) % 3];
+                moving = true;
+            } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+                playerX += playerSpeed * delta;
+                animationTimer += delta;
+                currentPlayerTexture = rightFrames[(int)(animationTimer / frameDuration) % 3];
+                moving = true;
+            }
         
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            playerX -= playerSpeed * delta;
-            animationTimer += delta;
-            currentPlayerTexture = leftFrames[(int)(animationTimer / frameDuration) % 3];
-            moving = true;
-        } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            playerX += playerSpeed * delta;
-            animationTimer += delta;
-            currentPlayerTexture = rightFrames[(int)(animationTimer / frameDuration) % 3];
-            moving = true;
+            // Reset to idle if not moving
+            if (!moving) { 
+                currentPlayerTexture = playerIdle; 
+                animationTimer = 0; 
+            }
+
         }
-    
-        if (!moving) { 
-            currentPlayerTexture = playerIdle; 
-            animationTimer = 0; 
-        }
-    }
-}
+    } // End of updateGame
 
     @Override
     public void resize(int width, int height) {

@@ -163,7 +163,7 @@ public class GameScreen implements Screen {
                 moving = true;
             }
             if (!moving) { currentPlayerTexture = playerIdle; animationTimer = 0; }
-            playerX = Math.max(0, Math.min(playerX, 1280 - 550));
+            // playerX = Math.max(0, Math.min(playerX, 1280 - 550));
         }
     }
 

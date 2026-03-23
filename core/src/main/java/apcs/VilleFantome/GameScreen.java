@@ -53,7 +53,7 @@ public class GameScreen implements Screen {
         this.camera.position.set(640.0F, 360.0F, 0.0F);
 
         this.dialogue1 = new Texture("Narrator_box1.png");
-        this.dialogue2 = new Texture("scrapped letter 3.png");
+        this.dialogue2 = new Texture("scrapped letter 2.png");
         this.currentNarratorBox = this.dialogue1;
         this.typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
         this.typeSound.play(1.0F);

@@ -20,6 +20,7 @@ public class GameScreen implements Screen {
     private SpriteBatch batch;
     private Stage stage;
     private boolean inputSet = false;
+    private boolean[] dialogueHasSound;
 
     // pause menu variables
     private enum State { RUNNING, PAUSED }
@@ -71,6 +72,21 @@ public class GameScreen implements Screen {
         };
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
         typeSound.play(1.0F);
+        
+        dialogueHasSound = new boolean[] {
+        true,  // Narrator 1 -> Sound ON
+        false, // Letter 2   -> Sound OFF
+        true,  // Narrator 2 -> Sound ON
+        false   // Narrator 3 -> Sound ON
+    };
+
+    // Start the first sound ONLY if the first screen is a narrator box
+    if (dialogueHasSound[0]) {
+        typeSound.play(1.0F);
+        soundPlaying = true;
+    } else {
+        soundPlaying = false;
+    }
 
         // world assets
         backgroundTexture = new Texture("background1.png");
@@ -92,6 +108,7 @@ public class GameScreen implements Screen {
                     state = State.RUNNING;
                     typeSound.resume();
                 }
+                
             }
         });
 
@@ -178,21 +195,36 @@ public void render(float delta) {
     }
 }
 
-   private void updateGame(float delta) {
-    // 1. Dialogue Logic
+    private void updateGame(float delta) {
+    // 1. SOUND TIMER (Stops sound after 4 seconds)
+    if (soundPlaying) {
+        soundTimer += delta;
+        if (soundTimer >= 4.0F) { 
+            typeSound.stop(); 
+            soundPlaying = false; 
+        }
+    }
+
+    // 2. DIALOGUE CLICK LOGIC
     if (currentDialogueIndex < dialogueScreens.length) {
         if (Gdx.input.justTouched()) {
-            currentDialogueIndex++; // Move to the next screen
+            currentDialogueIndex++; 
             
-            // If we just passed the last dialogue, stop the sound
-            if (currentDialogueIndex >= dialogueScreens.length) {
-                typeSound.stop();
-                soundPlaying = false;
+            // Reset for the next screen
+            typeSound.stop();
+            soundTimer = 0.0F;
+
+            // CHECK THE SWITCH: Should this new index play a sound?
+            if (currentDialogueIndex < dialogueScreens.length && dialogueHasSound[currentDialogueIndex]) {
+                typeSound.play(1.0F);
+                soundPlaying = true;
+            } else {
+                soundPlaying = false; // No sound for this screen
             }
         }
     }
 
-    // 2. Movement Logic (This only runs AFTER dialogue is finished)
+    // 3. MOVEMENT LOGIC (Only runs when dialogue is finished)
     if (currentDialogueIndex >= dialogueScreens.length) { 
         boolean moving = false;
         
@@ -208,12 +240,10 @@ public void render(float delta) {
             moving = true;
         }
     
-        // Reset to idle if not moving
         if (!moving) { 
             currentPlayerTexture = playerIdle; 
             animationTimer = 0; 
         }
-
     }
 }
 
@@ -233,17 +263,19 @@ public void render(float delta) {
 
     @Override
     public void dispose() {
-        batch.dispose();
-        stage.dispose();
-        dialogue1.dispose();
-        dialogue2.dispose();
-        backgroundTexture.dispose();
-        playerIdle.dispose();
-        pauseBg.dispose();
-        resumeTex.dispose();
-        quitTex.dispose();
-        typeSound.dispose();
-        for (Texture t : leftFrames) t.dispose();
-        for (Texture t : rightFrames) t.dispose();
+    batch.dispose();
+    stage.dispose();
+    backgroundTexture.dispose();
+    playerIdle.dispose();
+    pauseBg.dispose();
+    typeSound.dispose();
+    
+    // Dispose all dialogue textures in the array
+    for (Texture t : dialogueScreens) {
+        if (t != null) t.dispose();
     }
+    
+    for (Texture t : leftFrames) t.dispose();
+    for (Texture t : rightFrames) t.dispose();
+}
 }

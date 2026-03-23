@@ -56,7 +56,7 @@ public class GameScreen implements Screen {
         typeSound.play(1.0f);
 
         pauseBg = new Texture("pause_screen.png");
-        resumeTex = new Texture("resumebutton.png");
+        resumeTex = new Texture("resume_button.png");
         quitTex = new Texture("quitbutton.png");
         resumeBounds = new Rectangle(540, 400, 200, 80);
         quitBounds = new Rectangle(540, 280, 200, 80);

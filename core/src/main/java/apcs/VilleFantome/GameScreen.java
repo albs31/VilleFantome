@@ -1,12 +1,15 @@
 package apcs.VilleFantome;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -16,28 +19,34 @@ public class GameScreen implements Screen {
     private OrthographicCamera camera;
     private Viewport viewport;
 
+    // --- PAUSE MENU VARIABLES ---
+    private enum State { RUNNING, PAUSED }
+    private State state = State.RUNNING;
+    private Texture pauseBg;
+    private Texture resumeTex;
+    private Texture quitTex;
+    private Rectangle resumeBounds;
+    private Rectangle quitBounds;
+    private Vector3 touchPoint;
+
+    // --- DIALOGUE VARIABLES ---
     private Texture dialogue1;
     private Texture dialogue2;
     private Texture currentNarratorBox;
     private Sound typeSound;
-
     private int sceneState = 1;
     private float soundTimer = 0.0F;
     private boolean soundPlaying = true;
 
-   
+    // --- PLAYER & WORLD VARIABLES ---
     private Texture backgroundTexture;
     private Texture playerIdle;
     private Texture[] leftFrames;
     private Texture[] rightFrames;
     private Texture currentPlayerTexture;
-
-   
-    private float playerX;
-    private float playerY;
+    private float playerX = 600.0F;
+    private float playerY = 20.0F;
     private float playerSpeed = 300.0F;
-
-   
     private float animationTimer = 0.0F;
     private float frameDuration = 0.15F;
 
@@ -45,149 +54,149 @@ public class GameScreen implements Screen {
         this.game = game;
     }
 
+    @Override
     public void show() {
-        this.batch = new SpriteBatch();
-        this.camera = new OrthographicCamera();
-        this.viewport = new FitViewport(1280.0F, 720.0F, this.camera);
-        this.viewport.apply();
-        this.camera.position.set(640.0F, 360.0F, 0.0F);
+        batch = new SpriteBatch();
+        camera = new OrthographicCamera();
+        viewport = new FitViewport(1280, 720, camera);
+        viewport.apply();
+        camera.position.set(640, 360, 0);
 
-        this.dialogue1 = new Texture("Narrator_box1.png");
-        this.dialogue2 = new Texture("scrapped letter 2.png");
-        this.currentNarratorBox = this.dialogue1;
-        this.typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
-        this.typeSound.play(1.0F);
+        // Assets - Fixed names to match your 'assets' folder
+        dialogue1 = new Texture("Narrator_box1.png");
+        dialogue2 = new Texture("scrapped letter 2.png");
+        currentNarratorBox = dialogue1;
+        typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
+        typeSound.play(1.0F);
 
-       
-        this.backgroundTexture = new Texture("background1.png");
-        this.playerIdle = new Texture("standing_still.png");
+        backgroundTexture = new Texture("background1.png");
+        playerIdle = new Texture("standing_still.png");
+        
+        // Pause Menu Assets
+        pauseBg = new Texture("pause_screen.png");
+        resumeTex = new Texture("resumebutton.png");
+        quitTex = new Texture("quitbutton.png");
+        resumeBounds = new Rectangle(540, 400, 200, 80);
+        quitBounds = new Rectangle(540, 280, 200, 80);
+        touchPoint = new Vector3();
 
-        this.leftFrames = new Texture[3];
-        this.leftFrames[0] = new Texture("left(1).png");
-        this.leftFrames[1] = new Texture("left(2).png");
-        this.leftFrames[2] = new Texture("left(3).png");
-
-        this.rightFrames = new Texture[3];
-        this.rightFrames[0] = new Texture("right(1).png");
-        this.rightFrames[1] = new Texture("right(2).png");
-        this.rightFrames[2] = new Texture("right(3).png");
-
-        this.currentPlayerTexture = this.playerIdle;
-
-        // where the player starts
-        this.playerX = 600.0F;
-        this.playerY = 20.0F;
+        // Animation Frames
+        leftFrames = new Texture[]{new Texture("left(1).png"), new Texture("left(2).png"), new Texture("left(3).png")};
+        rightFrames = new Texture[]{new Texture("right(1).png"), new Texture("right(2).png"), new Texture("right(3).png")};
+        currentPlayerTexture = playerIdle;
     }
 
+    @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-        if (this.soundPlaying) {
-            this.soundTimer += delta;
-            if (this.soundTimer > 4.0F) {
-                this.typeSound.stop();
-                this.soundPlaying = false;
+        // 1. ESCAPE COMMAND
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            if (state == State.RUNNING) {
+                state = State.PAUSED;
+                typeSound.pause();
+            } else {
+                state = State.RUNNING;
+                typeSound.resume();
             }
+        }
+
+        // 2. LOGIC BRANCHING
+        if (state == State.RUNNING) {
+            updateGame(delta);
+        } else {
+            handlePauseInput();
+        }
+
+        // 3. DRAWING
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        camera.update();
+        batch.setProjectionMatrix(camera.combined);
+
+        batch.begin();
+        if (sceneState == 3) {
+            batch.draw(backgroundTexture, 0, 0, 1280, 720);
+            batch.draw(currentPlayerTexture, playerX, playerY, 550, 400);
+        }
+        if (sceneState < 3) {
+            batch.draw(currentNarratorBox, 0, 0, 1280, 720);
+        }
+
+        // DRAW PAUSE OVERLAY LAST
+        if (state == State.PAUSED) {
+            batch.draw(pauseBg, 0, 0, 1280, 720);
+            batch.draw(resumeTex, resumeBounds.x, resumeBounds.y, resumeBounds.width, resumeBounds.height);
+            batch.draw(quitTex, quitBounds.x, quitBounds.y, quitBounds.width, quitBounds.height);
+        }
+        batch.end();
+    }
+
+    private void updateGame(float delta) {
+        // Sound & Dialogue Logic
+        if (soundPlaying) {
+            soundTimer += delta;
+            if (soundTimer > 4.0F) { typeSound.stop(); soundPlaying = false; }
         }
 
         if (Gdx.input.justTouched()) {
-            if (this.sceneState == 1) {
-                this.sceneState = 2;
-                this.currentNarratorBox = this.dialogue2;
-                this.typeSound.stop();
-                this.soundPlaying = false;
-            } else if (this.sceneState == 2) {
-                this.sceneState = 3;
+            if (sceneState == 1) {
+                sceneState = 2;
+                currentNarratorBox = dialogue2;
+                typeSound.stop();
+                soundPlaying = false;
+            } else if (sceneState == 2) {
+                sceneState = 3;
             }
         }
 
-       
-        if (this.sceneState == 3) {
+        // Movement Logic
+        if (sceneState == 3) {
             boolean moving = false;
-
-            if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
-                this.playerX -= this.playerSpeed * delta;
-                this.animationTimer += delta;
-
-                int frameIndex = (int)(this.animationTimer / this.frameDuration) % this.leftFrames.length;
-                this.currentPlayerTexture = this.leftFrames[frameIndex];
+            if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+                playerX -= playerSpeed * delta;
+                animationTimer += delta;
+                currentPlayerTexture = leftFrames[(int)(animationTimer / frameDuration) % 3];
+                moving = true;
+            } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+                playerX += playerSpeed * delta;
+                animationTimer += delta;
+                currentPlayerTexture = rightFrames[(int)(animationTimer / frameDuration) % 3];
                 moving = true;
             }
-
-            if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
-                this.playerX += this.playerSpeed * delta;
-                this.animationTimer += delta;
-
-                int frameIndex = (int)(this.animationTimer / this.frameDuration) % this.rightFrames.length;
-                this.currentPlayerTexture = this.rightFrames[frameIndex];
-                moving = true;
-            }
-
-            if (!moving) {
-                this.currentPlayerTexture = this.playerIdle;
-                this.animationTimer = 0.0F;
-            }
-
-            // player on screen lol
-           this.playerX = Math.max(0.0F, Math.min(this.playerX, 1280.0F - 500.0F));
-        }
-
-        this.camera.update();
-        this.batch.setProjectionMatrix(this.camera.combined);
-        this.batch.begin();
-
-        
-        if (this.sceneState == 3) {
-            this.batch.draw(this.backgroundTexture, 0.0F, 0.0F, 1280.0F, 720.0F);
-        }
-
-        
-        if (this.sceneState < 3) {
-            this.batch.draw(this.currentNarratorBox, 0.0F, 0.0F, 1280.0F, 720.0F);
-        }
-
-        
-        if (this.sceneState == 3) {
-            this.batch.draw(this.currentPlayerTexture, this.playerX, this.playerY, 550.0F, 400.0F);
-        }
-
-        this.batch.end();
-    }
-
-    public void resize(int width, int height) {
-        if (this.viewport != null) {
-            this.viewport.update(width, height, true);
+            if (!moving) { currentPlayerTexture = playerIdle; animationTimer = 0; }
+            playerX = Math.max(0, Math.min(playerX, 1280 - 550));
         }
     }
 
+    private void handlePauseInput() {
+        if (Gdx.input.justTouched()) {
+            touchPoint.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+            viewport.unproject(touchPoint);
+            if (resumeBounds.contains(touchPoint.x, touchPoint.y)) {
+                state = State.RUNNING;
+                typeSound.resume();
+            } else if (quitBounds.contains(touchPoint.x, touchPoint.y)) {
+                game.setScreen(new LoadingScreen(game));
+            }
+        }
+    }
+
+    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
+    @Override public void hide() {}
+    @Override public void pause() {}
+    @Override public void resume() {}
+
+    @Override
     public void dispose() {
-        this.batch.dispose();
-        this.dialogue1.dispose();
-        this.dialogue2.dispose();
-
-        this.backgroundTexture.dispose();
-        this.playerIdle.dispose();
-
-        for (Texture frame : this.leftFrames) {
-            frame.dispose();
-        }
-
-        for (Texture frame : this.rightFrames) {
-            frame.dispose();
-        }
-
-        if (this.typeSound != null) {
-            this.typeSound.dispose();
-        }
-    }
-
-    public void hide() {
-    }
-
-    public void pause() {
-    }
-
-    public void resume() {
+        batch.dispose();
+        dialogue1.dispose();
+        dialogue2.dispose();
+        backgroundTexture.dispose();
+        playerIdle.dispose();
+        pauseBg.dispose();
+        resumeTex.dispose();
+        quitTex.dispose();
+        typeSound.dispose();
+        for (Texture t : leftFrames) t.dispose();
+        for (Texture t : rightFrames) t.dispose();
     }
 }

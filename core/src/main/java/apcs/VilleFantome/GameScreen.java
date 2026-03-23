@@ -63,7 +63,7 @@ public class GameScreen implements Screen {
         this.camera.position.set(640.0F, 360.0F, 0.0F);
 
         dialogue1 = new Texture("Narrator_box1.png"); 
-        dialogue2 = new Texture("scrapped letter 3.png"); 
+        dialogue2 = new Texture("scrapped letter 2.png"); 
         currentNarratorBox = dialogue1;
 
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));

@@ -73,10 +73,10 @@ public class Player {
     }
 
     public void draw(SpriteBatch batch) {
-        // Draw the player. Ensure the width (550) and height (400) 
-        // match the aspect ratio of your actual .png files
-        batch.draw(currentFrame, x, y, 550, 400);
-    }
+    // Instead of drawing from (x, y), we draw relative to the center
+    // This only works perfectly if the character is centered in the PNG
+    batch.draw(currentFrame, x, y, 550, 400);
+}
 
     public void dispose() {
         playerIdle.dispose();

@@ -75,7 +75,7 @@ public class GameScreen implements Screen {
         // pause menu assets
         pauseBg = new Texture("pause_screen.png");
 
-        resumeTex = new Texture("resumebutton.png");
+        resumeTex = new Texture("resume_button.png");
         resumeButton = new ImageButton(
             new TextureRegionDrawable(new TextureRegion(resumeTex))
         );

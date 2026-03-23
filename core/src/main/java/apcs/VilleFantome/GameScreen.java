@@ -33,6 +33,7 @@ public class GameScreen implements Screen {
     // dialogue variables
     private Texture dialogue1;
     private Texture dialogue2;
+    private Texture dialogue3;
     private Texture currentNarratorBox;
     private Sound typeSound;
     private int sceneState = 1;
@@ -64,6 +65,7 @@ public class GameScreen implements Screen {
         // dialogue assets
         dialogue1 = new Texture("Narrator_box1.png");
         dialogue2 = new Texture("scrapped letter 2.png");
+        dialogue3 = new Texture("Narrator_box2.png");
         currentNarratorBox = dialogue1;
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
         typeSound.play(1.0F);
@@ -147,14 +149,18 @@ public class GameScreen implements Screen {
 
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
-        if (sceneState == 3) {
-            batch.draw(backgroundTexture, 0, 0, 1280, 720);
-            batch.draw(currentPlayerTexture, playerX, playerY, 550, 400);
-        }
-        if (sceneState < 3) {
-            batch.draw(currentNarratorBox, 0, 0, 1280, 720);
-        }
 
+// Change 3 to 4 here: This draws the town and player
+if (sceneState == 4) { 
+    batch.draw(backgroundTexture, 0, 0, 1280, 720);
+    batch.draw(currentPlayerTexture, playerX, playerY, 550, 400);
+}
+
+// Change 3 to 4 here: This ensures dialogue stays visible through state 3
+if (sceneState < 4) { 
+    batch.draw(currentNarratorBox, 0, 0, 1280, 720);
+}
+// ... rest of your code
         // Draw pause overlay last
         if (state == State.PAUSED) {
             batch.draw(pauseBg, 0, 0, 1280, 720);
@@ -169,26 +175,40 @@ public class GameScreen implements Screen {
     }
 
     private void updateGame(float delta) {
-        // Sound & Dialogue Logic
-        if (soundPlaying) {
-            soundTimer += delta;
-            if (soundTimer > 4.0F) { typeSound.stop(); soundPlaying = false; }
-        }
+    // ... (Keep your Sound & Dialogue Logic here) ...
 
-        if (Gdx.input.justTouched()) {
-            if (sceneState == 1) {
-                sceneState = 2;
-                currentNarratorBox = dialogue2;
-                typeSound.stop();
-                soundPlaying = false;
-            } else if (sceneState == 2) {
-                sceneState = 3;
-            }
+    if (Gdx.input.justTouched()) {
+        if (sceneState == 1) {
+            sceneState = 2;
+            currentNarratorBox = dialogue2;
+            typeSound.stop();
+            soundPlaying = false;
+        } else if (sceneState == 2) {
+            sceneState = 3;
+            currentNarratorBox = dialogue3; // Shows Narrator_box2
+        } else if (sceneState == 3) {
+            sceneState = 4; // Moves to gameplay state
         }
+    }
+
+    // --- CHANGE THIS LINE FROM 3 TO 4 ---
+    if (sceneState == 4) { 
+        boolean moving = false;
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+            playerX -= playerSpeed * delta;
+            animationTimer += delta;
+            currentPlayerTexture = leftFrames[(int)(animationTimer / frameDuration) % 3];
+            moving = true;
+        } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            playerX += playerSpeed * delta;
+            animationTimer += delta;
+            currentPlayerTexture = rightFrames[(int)(animationTimer / frameDuration) % 3];
+            moving = true;
+        }
+    
 
         // Movement Logic
         if (sceneState == 3) {
-            boolean moving = false;
             if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
                 playerX -= playerSpeed * delta;
                 animationTimer += delta;
@@ -203,6 +223,7 @@ public class GameScreen implements Screen {
             if (!moving) { currentPlayerTexture = playerIdle; animationTimer = 0; }
             playerX = Math.max(0, Math.min(playerX, 1280 - 550));
         }
+    }
     }
 
     @Override

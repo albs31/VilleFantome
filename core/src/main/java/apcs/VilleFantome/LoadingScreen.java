@@ -18,8 +18,8 @@ public class LoadingScreen implements Screen {
     private SpriteBatch batch;
     private Texture background;
     private Stage stage;
-
     private Texture playTex, saveTex, loreTex;
+    private boolean inputSet = false;
 
     public LoadingScreen(Main game) {
         this.game = game;
@@ -31,9 +31,8 @@ public class LoadingScreen implements Screen {
         background = new Texture("finalloading.png");
 
         stage = new Stage(new FitViewport(1280, 720));
-        Gdx.input.setInputProcessor(stage);
 
-        // --- Play Button ---
+        // play button 
         playTex = new Texture("play_button.png");
         ImageButton playButton = new ImageButton(
             new TextureRegionDrawable(new TextureRegion(playTex))
@@ -47,7 +46,7 @@ public class LoadingScreen implements Screen {
             }
         });
 
-        // --- Save Button ---
+        // save button
         saveTex = new Texture("save_button.png");
         ImageButton saveButton = new ImageButton(
             new TextureRegionDrawable(new TextureRegion(saveTex))
@@ -57,11 +56,11 @@ public class LoadingScreen implements Screen {
         saveButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new WarningScreen(game)); // replace with SaveScreen(game) when ready
+                game.setScreen(new WarningScreen(game)); // will open last saved instance of game when coded
             }
         });
 
-        // --- Lore Button ---
+        // lore button
         loreTex = new Texture("lore_button.png");
         ImageButton loreButton = new ImageButton(
             new TextureRegionDrawable(new TextureRegion(loreTex))
@@ -71,19 +70,26 @@ public class LoadingScreen implements Screen {
         loreButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new WarningScreen(game)); // replace with LoreScreen(game) when ready
+                game.setScreen(new LoreScreen(game)); // opens lore paragraphs
             }
         });
 
         stage.addActor(playButton);
         stage.addActor(saveButton);
         stage.addActor(loreButton);
+
+        inputSet = false;
     }
 
     @Override
     public void render(float delta) {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        if (!inputSet) {
+            Gdx.input.setInputProcessor(stage);
+            inputSet = true;
+        }
 
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
@@ -112,6 +118,7 @@ public class LoadingScreen implements Screen {
     @Override
     public void hide() {
         Gdx.input.setInputProcessor(null);
+        inputSet = false;
     }
 
     @Override public void pause() {}

@@ -59,7 +59,6 @@ public class GameScreen implements Screen {
                 soundPlaying = false;
             }
         }
-
         // CLICK LOGIC
         if (Gdx.input.justTouched()) {
             if (sceneState == 1) {

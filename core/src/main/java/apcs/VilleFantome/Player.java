@@ -6,24 +6,28 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Player {
+    // 1. TEXTURES
     private Texture playerIdle;
     private Texture[] leftFrames;
     private Texture[] rightFrames;
     private Texture currentFrame;
 
+    // 2. POSITION & SIZE (Change these to make him bigger!)
     public float x, y;
+    private float drawWidth = 650.0f;  // Try a large number first to see the change
+    private float drawHeight = 500.0f; // Try a large number first to see the change
+    
+    // 3. MOVEMENT & ANIMATION
     private float speed = 300.0f;
     private float animationTimer = 0.0f;
     private float frameDuration = 0.15f;
-    
-    // Track which way the player is facing to stay in that direction when idle
-    private boolean facingRight = true;
+    private boolean moving = false;
 
     public Player(float startX, float startY) {
         this.x = startX;
         this.y = startY;
 
-        // Ensure these filenames match your assets folder exactly
+        // Load Assets
         playerIdle = new Texture("standing_still.png");
         leftFrames = new Texture[]{
             new Texture("left(1).png"), 
@@ -40,47 +44,44 @@ public class Player {
     }
 
     public void update(float delta) {
-        boolean moving = false;
+        moving = false;
 
+        // LEFT Movement
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
             x -= speed * delta;
             animationTimer += delta;
-            // Pick frame from left array
             int frameIndex = (int)(animationTimer / frameDuration) % leftFrames.length;
             currentFrame = leftFrames[frameIndex];
             moving = true;
-            facingRight = false;
         } 
+        // RIGHT Movement
         else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
             x += speed * delta;
             animationTimer += delta;
-            // Pick frame from right array
             int frameIndex = (int)(animationTimer / frameDuration) % rightFrames.length;
             currentFrame = rightFrames[frameIndex];
             moving = true;
-            facingRight = true;
         }
 
+        // IDLE Logic
         if (!moving) {
-            // When stopped, use the idle texture
             currentFrame = playerIdle;
-            // Optional: reset timer so the next walk starts at frame 1
             animationTimer = 0;
         }
-
-        // Keep player inside screen bounds (1280 is width, 150 is approx player width)
-        x = Math.max(0, Math.min(x, 1280 - 150)); 
     }
 
     public void draw(SpriteBatch batch) {
-    // Instead of drawing from (x, y), we draw relative to the center
-    // This only works perfectly if the character is centered in the PNG
-    batch.draw(currentFrame, x, y, 550, 400);
-}
+        // This uses the variables from the top of the class
+        batch.draw(currentFrame, x, y, drawWidth, drawHeight);
+    }
 
     public void dispose() {
         playerIdle.dispose();
         for (Texture t : leftFrames) t.dispose();
         for (Texture t : rightFrames) t.dispose();
     }
+    
+    // Getters for width/height in case GameScreen needs them
+    public float getWidth() { return drawWidth; }
+    public float getHeight() { return drawHeight; }
 }

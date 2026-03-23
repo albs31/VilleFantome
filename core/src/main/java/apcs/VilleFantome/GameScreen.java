@@ -21,6 +21,7 @@ public class GameScreen implements Screen {
     private Stage stage;
     private boolean inputSet = false;
     private boolean[] dialogueHasSound;
+    private Player player;
 
     // pause menu variables
     private enum State { RUNNING, PAUSED }
@@ -53,7 +54,7 @@ public class GameScreen implements Screen {
 
     // Fade variables
     private float fadeAlpha = 1.0f; // Start fully black
-    private float fadeSpeed = 2.5f; // Adjust this to make it faster or slower
+    private float fadeSpeed = 3.5f; // Adjust this to make it faster or slower
 
     public GameScreen(Main game) {
         this.game = game;
@@ -64,6 +65,8 @@ public class GameScreen implements Screen {
         batch = new SpriteBatch();
 
         stage = new Stage(new FitViewport(1280, 720));
+
+        player = new Player(600, 20);
 
         // dialogue assets
         // List them in order here. You can add 100 here and the logic won't change!
@@ -184,7 +187,7 @@ public void render(float delta) {
     if (currentDialogueIndex >= dialogueScreens.length) { 
         // We are in the Town
         batch.draw(backgroundTexture, 0, 0, 1280, 720);
-        batch.draw(currentPlayerTexture, playerX, playerY, 550, 400);
+        player.draw(batch);
     } else { 
         // We are in Dialogue
         batch.draw(dialogueScreens[currentDialogueIndex], 0, 0, 1280, 720);
@@ -245,28 +248,11 @@ private void updateGame(float delta) {
 
         // 3. MOVEMENT LOGIC (Only runs when dialogue is finished)
         if (currentDialogueIndex >= dialogueScreens.length) { 
-            boolean moving = false;
-            
-            if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-                playerX -= playerSpeed * delta;
-                animationTimer += delta;
-                currentPlayerTexture = leftFrames[(int)(animationTimer / frameDuration) % 3];
-                moving = true;
-            } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-                playerX += playerSpeed * delta;
-                animationTimer += delta;
-                currentPlayerTexture = rightFrames[(int)(animationTimer / frameDuration) % 3];
-                moving = true;
-            }
         
-            // Reset to idle if not moving
-            if (!moving) { 
-                currentPlayerTexture = playerIdle; 
-                animationTimer = 0; 
-            }
-
-        }
+        // This one line replaces all your old movement IF statements!
+        player.update(delta);
     } // End of updateGame
+}
 
     @Override
     public void resize(int width, int height) {

@@ -1,7 +1,6 @@
 package apcs.VilleFantome;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
@@ -28,40 +27,44 @@ public class GameScreen implements Screen {
     private Texture pauseBg, resumeTex, quitTex;
     private Sound typeSound;
 
-    // Logic Variables
     private int sceneState = 1; 
-    private float soundTimer = 0;
+    private float soundTimer = 0; // Timer to track sound duration
     private boolean soundPlaying = true;
 
     // Input Hitboxes for the Pause Menu
     private Rectangle resumeBounds, quitBounds;
     private Vector3 touchPoint;
 
+   
+    private Texture backgroundTexture;
+    private Texture playerIdle;
+    private Texture[] leftFrames;
+    private Texture[] rightFrames;
+    private Texture currentPlayerTexture;
+
+   
+    private float playerX;
+    private float playerY;
+    private float playerSpeed = 300.0F;
+
+   
+    private float animationTimer = 0.0F;
+    private float frameDuration = 0.15F;
+
     public GameScreen(Main game) {
         this.game = game;
     }
 
-    @Override
     public void show() {
-        batch = new SpriteBatch();
-        camera = new OrthographicCamera();
-        viewport = new FitViewport(1280, 720, camera);
-        viewport.apply();
-        camera.position.set(640, 360, 0);
+        this.batch = new SpriteBatch();
+        this.camera = new OrthographicCamera();
+        this.viewport = new FitViewport(1280.0F, 720.0F, this.camera);
+        this.viewport.apply();
+        this.camera.position.set(640.0F, 360.0F, 0.0F);
 
-        // ASSET LOADING: Matches your Explorer sidebar exactly
         dialogue1 = new Texture("Narrator_box1.png"); 
         dialogue2 = new Texture("scrapped letter 3.png"); 
         currentNarratorBox = dialogue1;
-
-        pauseBg = new Texture("pause screen.png"); 
-        resumeTex = new Texture("resumebutton.png"); // Ensure these exist in assets
-        quitTex = new Texture("quitbutton.png");
-
-        // Button Positions (Adjust x, y to match your pause screen art)
-        resumeBounds = new Rectangle(540, 400, 200, 80);
-        quitBounds = new Rectangle(540, 280, 200, 80);
-        touchPoint = new Vector3();
 
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
         typeSound.play(1.0f);
@@ -69,47 +72,31 @@ public class GameScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        // ESC Toggle Logic
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            if (state == State.RUNNING) {
-                state = State.PAUSED;
-                typeSound.pause();
-            } else {
-                state = State.RUNNING;
-                typeSound.resume();
-            }
-        }
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Branching Logic
-        if (state == State.RUNNING) {
-            updateRunning(delta);
-        } else {
-            updatePaused();
-        }
-
-        draw();
-    }
-
-    private void updateRunning(float delta) {
-        // Stops typewriter sound after a few seconds
+        // SOUND TIMER LOGIC
+        // This stops the sound after 2 seconds, even if the user hasn't clicked yet
         if (soundPlaying) {
             soundTimer += delta;
-            if (soundTimer > 2.5f) { 
+            if (soundTimer > 4.0f) { 
                 typeSound.stop();
                 soundPlaying = false;
             }
         }
-
-        // Advance dialogue on click
+        // CLICK LOGIC
         if (Gdx.input.justTouched()) {
             if (sceneState == 1) {
                 sceneState = 2;
                 currentNarratorBox = dialogue2;
-                typeSound.stop();
-                soundPlaying = false;
+                typeSound.stop(); // Stop sound immediately if they click early
+                soundPlaying = false; 
             } else if (sceneState == 2) {
-                sceneState = 3; // Moves to blank screen state
+                sceneState = 3;
             }
+
+            // player on screen lol
+           this.playerX = Math.max(0.0F, Math.min(this.playerX, 1280.0F - 500.0F));
         }
     }
 
@@ -135,31 +122,22 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
 
         batch.begin();
-        // Render Game
         if (sceneState < 3) {
             batch.draw(currentNarratorBox, 0, 0, 1280, 720);
-        }
-
-        // Render Pause Menu Overlay
-        if (state == State.PAUSED) {
-            batch.draw(pauseBg, 0, 0, 1280, 720);
-            batch.draw(resumeTex, resumeBounds.x, resumeBounds.y, resumeBounds.width, resumeBounds.height);
-            batch.draw(quitTex, quitBounds.x, quitBounds.y, quitBounds.width, quitBounds.height);
         }
         batch.end();
     }
 
-    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
-
     @Override
+    public void resize(int width, int height) {
+        if (viewport != null) viewport.update(width, height, true);
+    }
+
     public void dispose() {
         batch.dispose();
         dialogue1.dispose();
         dialogue2.dispose();
-        pauseBg.dispose();
-        resumeTex.dispose();
-        quitTex.dispose();
-        typeSound.dispose();
+        if (typeSound != null) typeSound.dispose();
     }
 
     @Override public void hide() {}

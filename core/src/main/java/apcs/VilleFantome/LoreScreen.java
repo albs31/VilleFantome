@@ -11,8 +11,9 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 public class LoreScreen implements Screen {
     private Main game;
     private SpriteBatch batch;
-    private Texture loreImage;
     private Stage stage;
+    private Texture loreImage;
+    private boolean inputSet = false;
 
     public LoreScreen(Main game) {
         this.game = game;
@@ -24,13 +25,19 @@ public class LoreScreen implements Screen {
         loreImage = new Texture("lore.png");
 
         stage = new Stage(new FitViewport(1280, 720));
-        Gdx.input.setInputProcessor(stage);
+
+        inputSet = false;
     }
 
     @Override
     public void render(float delta) {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        if (!inputSet) {
+            Gdx.input.setInputProcessor(stage);
+            inputSet = true;
+        }
 
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
@@ -53,7 +60,12 @@ public class LoreScreen implements Screen {
         stage.dispose();
     }
 
-    @Override public void hide() { Gdx.input.setInputProcessor(null); }
+    @Override
+    public void hide() {
+        Gdx.input.setInputProcessor(null);
+        inputSet = false;
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
 }

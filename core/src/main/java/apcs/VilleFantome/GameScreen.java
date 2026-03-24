@@ -124,71 +124,76 @@ public class GameScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        // Toggle Controls
-        if (Gdx.input.isKeyJustPressed(Input.Keys.Y)) {
-            showControls = !showControls;
-        }
+        // 1. INPUT & LOGIC
+        if (Gdx.input.isKeyJustPressed(Input.Keys.Y)) showControls = !showControls;
 
-        // Global Fade
         if (fadeAlpha > 0) {
             fadeAlpha -= delta * fadeSpeed;
             if (fadeAlpha < 0) fadeAlpha = 0;
         }
 
-        // Pause Toggle
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
-            if (state == State.PAUSED) typeSound.pause(); else typeSound.resume();
+            if (state == State.PAUSED) {
+                Gdx.input.setInputProcessor(stage);
+                typeSound.pause();
+            } else {
+                Gdx.input.setInputProcessor(null); // Return focus to game
+                typeSound.resume();
+            }
         }
 
-        if (state == State.RUNNING) {
-            updateGame(delta);
-        }
+        if (state == State.RUNNING) updateGame(delta);
 
-        // CLEAR
+        // 2. DRAWING
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
 
-        // DRAWING LAYERS
+        // LAYER 1: Gameplay (Only shows after dialogue is done)
         if (currentDialogueIndex >= dialogueScreens.length) {
             batch.draw(backgroundTexture, 0, 0, 1280, 720);
             player.draw(batch);
 
             if (showEnterSign) {
-                batch.draw(enterSign, 390, 420, 500, 230);
+                // Draws original PNG size centered horizontally
+                float xPos = (1280 / 2f) - (enterSign.getWidth() / 2f);
+                float yPos = 400; // Vertical position
+                batch.draw(enterSign, xPos, yPos);
             }
         } 
-        
-        // Dialogue / Controls Overlay
-        if (showControls) {
-            batch.draw(dialogueScreens[5], 0, 0, 1280, 720);
-        } else if (currentDialogueIndex < dialogueScreens.length) {
-            batch.draw(dialogueScreens[currentDialogueIndex], 0, 0, 1280, 720);
+        // LAYER 2: Dialogue / Controls
+        else {
+            if (showControls) {
+                batch.draw(dialogueScreens[5], 0, 0, 1280, 720);
+            } else {
+                batch.draw(dialogueScreens[currentDialogueIndex], 0, 0, 1280, 720);
+            }
         }
 
-        // Pause Overlay
+        // LAYER 3: Pause Overlay
         if (state == State.PAUSED) {
             batch.draw(pauseBg, 0, 0, 1280, 720);
         }
 
-        // Black Fade Effect
+        // LAYER 4: Global Fade
         if (fadeAlpha > 0) {
             batch.setColor(0, 0, 0, fadeAlpha);
-            batch.draw(pauseBg, 0, 0, 1280, 720);
+            batch.draw(pauseBg, 0, 0, 1280, 720); // Using pauseBg as a black filler
             batch.setColor(1, 1, 1, 1);
         }
 
         batch.end();
 
+        // 3. UI STAGE (Buttons)
         if (state == State.PAUSED) {
             stage.act(delta);
             stage.draw();
         }
     }
-
+    
     private void updateGame(float delta) {
         if (showControls) return;
 

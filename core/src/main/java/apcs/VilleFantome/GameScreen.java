@@ -56,7 +56,7 @@ public class GameScreen implements Screen {
             new Texture("Theo_dialogue_2.png"),     
             new Texture("Theo_dialogue_1.png"),     
             new Texture("Game_controls.png"),    
-            new Texture("Narrator_box3.png")    
+            new Texture("Objective1.png")    
         };
 
         dialogueHasSound = new boolean[] { true, false, true, false, false, false, false };

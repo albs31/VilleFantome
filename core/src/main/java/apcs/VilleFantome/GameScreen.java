@@ -72,9 +72,10 @@ public class GameScreen implements Screen {
         // List them in order here. You can add 100 here and the logic won't change!
         dialogueScreens = new Texture[] {
         new Texture("Narrator_box1.png"),
-        new Texture("scrapped letter 2.png"),
-        new Texture("Narrator_box2.png"),
-        new Texture("Narrator_box3.png") // Example of adding more easily
+        new Texture ("Theo_Diary_Entry1.png"),
+        new Texture("Narrator_box2.png"), // add dialogue boxes here :)
+
+         
         };
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
         typeSound.play(1.0F);
@@ -183,29 +184,32 @@ public void render(float delta) {
     // --- START BATCH ---
     batch.begin();
 
-    // A. Draw World OR Dialogue
-    if (currentDialogueIndex >= dialogueScreens.length) { 
-        // We are in the Town
+    // 1. LAYER 1: The Town (Background + Player)
+    // We start drawing the town as soon as we hit Box 3
+    if (currentDialogueIndex >= 2) { 
         batch.draw(backgroundTexture, 0, 0, 1280, 720);
-        player.draw(batch);
-    } else { 
-        // We are in Dialogue
+        player.draw(batch); 
+    }
+
+    // 2. LAYER 2: The Dialogue Overlay
+    // This draws whatever box we are currently on
+    if (currentDialogueIndex < dialogueScreens.length) {
         batch.draw(dialogueScreens[currentDialogueIndex], 0, 0, 1280, 720);
     }
 
-    // B. Draw Pause Tint (If paused)
+    // 3. LAYER 3: Menus & Transitions
+    // Draw Pause Tint
     if (state == State.PAUSED) {
         batch.draw(pauseBg, 0, 0, 1280, 720);
     }
 
-    // C. Draw Fade Transition (Must be last inside batch to cover everything)
+    // Draw Fade Transition (Must be the absolute last thing in the batch)
     if (fadeAlpha > 0) {
         batch.setColor(0, 0, 0, fadeAlpha); 
         batch.draw(pauseBg, 0, 0, 1280, 720); 
-        batch.setColor(1, 1, 1, 1); // Always reset color to white
+        batch.setColor(1, 1, 1, 1); 
     }
 
-    // --- END BATCH ---
     batch.end();
 
     // 6. DRAW STAGE (Buttons)

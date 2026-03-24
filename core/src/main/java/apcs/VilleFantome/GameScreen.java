@@ -42,11 +42,13 @@ public class GameScreen implements Screen {
     private float fadeSpeed = 3.5f;
 
     private Texture enterSign;
-    private Rectangle door1Bounds;
-    private Rectangle door2Bounds;
-    private Rectangle playerBounds;
+    private Rectangle door1Bounds, door2Bounds, playerBounds;
     private boolean showEnterSign = false;
     private int currentDoor = 0;
+
+    // Movement Delay Variables
+    private float movementDelayTimer = 0.0f;
+    private final float MAX_DELAY = 0.8f; // Small pause before walking
 
     public GameScreen(Main game) {
         this.game = game;
@@ -56,22 +58,23 @@ public class GameScreen implements Screen {
     public void show() {
         batch = new SpriteBatch();
         stage = new Stage(new FitViewport(1280, 720));
+        
+        // Start with stage as input processor so buttons work if paused immediately
+        Gdx.input.setInputProcessor(stage);
 
-        // make sure raw keyboard/touch input works in gameplay
-        Gdx.input.setInputProcessor(null);
-
-        player = new Player(600, 20);
+        player = new Player(10, 20);
 
         dialogueScreens = new Texture[] {
-            new Texture("Narrator_box1.png"),
-            new Texture("Theo_Diary_Entry1.png"),
-            new Texture("Narrator_box2.png"),
-            new Texture("Theo_dialogue_2.png"),
-            new Texture("Theo_dialogue_1.png"),
-            new Texture("Game_controls.png"),
-            new Texture("Objective1.png")
+            new Texture("Narrator_box1.png"),      // 0
+            new Texture("Theo_Diary_Entry1.png"),   // 1
+            new Texture("Narrator_box2.png"),       // 2
+            new Texture("Theo_dialogue_2.png"),     // 3
+            new Texture("Theo_dialogue_1.png"),     // 4
+            new Texture("Game_controls.png"),       // 5
+            new Texture("Objective1.png")           // 6
         };
 
+        // Must match length of dialogueScreens (7)
         dialogueHasSound = new boolean[] { true, false, true, false, false, false, false };
 
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
@@ -81,18 +84,19 @@ public class GameScreen implements Screen {
         }
 
         backgroundTexture = new Texture("background1.png");
-
         pauseBg = new Texture("pause_screen.png");
         resumeTex = new Texture("resume_button.png");
         quitTex = new Texture("quitbutton.png");
-
         enterSign = new Texture("entersign.png");
 
-        // tweak these for your exact door positions
         door1Bounds = new Rectangle(90, 120, 110, 180);
         door2Bounds = new Rectangle(830, 120, 110, 180);
         playerBounds = new Rectangle();
 
+        setupPauseMenu();
+    }
+
+    private void setupPauseMenu() {
         resumeButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(resumeTex)));
         resumeButton.setPosition(540, 400);
         resumeButton.setSize(200, 80);
@@ -100,7 +104,6 @@ public class GameScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 state = State.RUNNING;
-                Gdx.input.setInputProcessor(null);
                 typeSound.resume();
             }
         });
@@ -121,37 +124,35 @@ public class GameScreen implements Screen {
 
     @Override
     public void render(float delta) {
+        // Toggle Controls
         if (Gdx.input.isKeyJustPressed(Input.Keys.Y)) {
             showControls = !showControls;
         }
 
+        // Global Fade
         if (fadeAlpha > 0) {
             fadeAlpha -= delta * fadeSpeed;
             if (fadeAlpha < 0) fadeAlpha = 0;
         }
 
+        // Pause Toggle
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
-
-            if (state == State.PAUSED) {
-                Gdx.input.setInputProcessor(stage);
-                typeSound.pause();
-            } else {
-                Gdx.input.setInputProcessor(null);
-                typeSound.resume();
-            }
+            if (state == State.PAUSED) typeSound.pause(); else typeSound.resume();
         }
 
         if (state == State.RUNNING) {
             updateGame(delta);
         }
 
+        // CLEAR
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
 
+        // DRAWING LAYERS
         if (currentDialogueIndex >= dialogueScreens.length) {
             batch.draw(backgroundTexture, 0, 0, 1280, 720);
             player.draw(batch);
@@ -159,16 +160,21 @@ public class GameScreen implements Screen {
             if (showEnterSign) {
                 batch.draw(enterSign, 390, 420, 500, 230);
             }
-        } else if (showControls) {
+        } 
+        
+        // Dialogue / Controls Overlay
+        if (showControls) {
             batch.draw(dialogueScreens[5], 0, 0, 1280, 720);
-        } else {
+        } else if (currentDialogueIndex < dialogueScreens.length) {
             batch.draw(dialogueScreens[currentDialogueIndex], 0, 0, 1280, 720);
         }
 
+        // Pause Overlay
         if (state == State.PAUSED) {
             batch.draw(pauseBg, 0, 0, 1280, 720);
         }
 
+        // Black Fade Effect
         if (fadeAlpha > 0) {
             batch.setColor(0, 0, 0, fadeAlpha);
             batch.draw(pauseBg, 0, 0, 1280, 720);
@@ -186,6 +192,7 @@ public class GameScreen implements Screen {
     private void updateGame(float delta) {
         if (showControls) return;
 
+        // Sound Logic
         if (soundPlaying) {
             soundTimer += delta;
             if (soundTimer >= 4.0F) {
@@ -194,6 +201,7 @@ public class GameScreen implements Screen {
             }
         }
 
+        // 1. Dialogue Phase
         if (currentDialogueIndex < dialogueScreens.length) {
             if (Gdx.input.justTouched() || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
                 currentDialogueIndex++;
@@ -202,11 +210,17 @@ public class GameScreen implements Screen {
                 currentDialogueIndex--;
                 resetDialogueEffects();
             }
-        } else {
+        } 
+        // 2. Pause Phase (The "Small Pause" before moving)
+        else if (movementDelayTimer < MAX_DELAY) {
+            movementDelayTimer += delta;
+        }
+        // 3. Gameplay Phase
+        else {
             player.update(delta);
 
-            // tweak this if the enter popup appears too early/late
-            playerBounds.set(player.getX() + 170, player.getY() + 40, 140, 260);
+            // Bounds logic - Adjusted to match Player getters
+            playerBounds.set(player.x + 170, player.y + 40, 140, 260);
 
             showEnterSign = false;
             currentDoor = 0;
@@ -220,11 +234,8 @@ public class GameScreen implements Screen {
             }
 
             if (showEnterSign && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-                if (currentDoor == 1) {
-                    game.setScreen(new House1Screen(game));
-                } else if (currentDoor == 2) {
-                    game.setScreen(new House2Screen(game));
-                }
+                if (currentDoor == 1) game.setScreen(new House1Screen(game));
+                else if (currentDoor == 2) game.setScreen(new House2Screen(game));
             }
         }
     }
@@ -234,6 +245,7 @@ public class GameScreen implements Screen {
         typeSound.stop();
         soundTimer = 0.0F;
 
+        // Sound array safety check
         if (currentDialogueIndex < dialogueHasSound.length && dialogueHasSound[currentDialogueIndex]) {
             typeSound.play(1.0F);
             soundPlaying = true;
@@ -242,21 +254,10 @@ public class GameScreen implements Screen {
         }
     }
 
-    @Override
-    public void resize(int width, int height) {
-        stage.getViewport().update(width, height, true);
-    }
-
-    @Override
-    public void hide() {
-        Gdx.input.setInputProcessor(null);
-    }
-
-    @Override
-    public void pause() {}
-
-    @Override
-    public void resume() {}
+    @Override public void resize(int w, int h) { stage.getViewport().update(w, h, true); }
+    @Override public void hide() { Gdx.input.setInputProcessor(null); }
+    @Override public void pause() {}
+    @Override public void resume() {}
 
     @Override
     public void dispose() {
@@ -268,11 +269,7 @@ public class GameScreen implements Screen {
         resumeTex.dispose();
         quitTex.dispose();
         enterSign.dispose();
-
-        for (Texture t : dialogueScreens) {
-            t.dispose();
-        }
-
+        for (Texture t : dialogueScreens) t.dispose();
         player.dispose();
     }
 }

@@ -37,7 +37,7 @@ public class House2Screen implements Screen {
         batch.end();
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            game.setScreen(new GameScreen(game));
+            game.setScreen(new GameScreen(game, true));
         }
     }
 

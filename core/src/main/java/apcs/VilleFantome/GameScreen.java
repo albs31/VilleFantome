@@ -238,7 +238,7 @@ public class GameScreen implements Screen {
                 currentDoor = 2;
             }
 
-            if (showEnterSign && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+            if (showEnterSign && Gdx.input.isKeyJustPressed(Input.Keys.F)) {
                 if (currentDoor == 1) game.setScreen(new House1Screen(game));
                 else if (currentDoor == 2) game.setScreen(new House2Screen(game));
             }

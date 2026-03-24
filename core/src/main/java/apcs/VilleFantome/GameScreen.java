@@ -20,7 +20,6 @@ public class GameScreen implements Screen {
     private SpriteBatch batch;
     private Stage stage;
     private boolean inputSet = false;
-    private boolean[] dialogueHasSound;
     private Player player;
 
     // pause menu variables
@@ -33,28 +32,19 @@ public class GameScreen implements Screen {
     private ImageButton quitButton;
 
     // dialogue variables
-    // Replace dialogue1, dialogue2, etc. with this:
     private Texture[] dialogueScreens;
+    private boolean[] dialogueHasSound; // Must match dialogueScreens length
     private int currentDialogueIndex = 0;
     private Sound typeSound;
     private float soundTimer = 0.0F;
-    private boolean soundPlaying = true;
+    private boolean soundPlaying = false;
 
-    // world and player variables
+    // world variables
     private Texture backgroundTexture;
-    private Texture playerIdle;
-    private Texture[] leftFrames;
-    private Texture[] rightFrames;
-    private Texture currentPlayerTexture;
-    private float playerX = 600.0F;
-    private float playerY = 20.0F;
-    private float playerSpeed = 300.0F;
-    private float animationTimer = 0.0F;
-    private float frameDuration = 0.15F;
 
     // Fade variables
-    private float fadeAlpha = 1.0f; // Start fully black
-    private float fadeSpeed = 3.5f; // Adjust this to make it faster or slower
+    private float fadeAlpha = 1.0f; 
+    private float fadeSpeed = 3.5f; 
 
     public GameScreen(Main game) {
         this.game = game;
@@ -63,49 +53,41 @@ public class GameScreen implements Screen {
     @Override
     public void show() {
         batch = new SpriteBatch();
-
         stage = new Stage(new FitViewport(1280, 720));
 
+        // Create the player using the Player class
         player = new Player(600, 20);
 
-        // dialogue assets
-        // List them in order here. You can add 100 here and the logic won't change!
+        // dialogue assets (Total: 6 screens)
         dialogueScreens = new Texture[] {
-        new Texture("Narrator_box1.png"),
-        new Texture ("Theo_Diary_Entry1.png"),
-        new Texture("Narrator_box2.png"), // add dialogue boxes here :)
-
-         
+            new Texture("Narrator_box1.png"),      // 0
+            new Texture("Theo_Diary_Entry1.png"),   // 1
+            new Texture("Narrator_box2.png"),       // 2
+            new Texture("Theo_dialogue_2.png"),     // 3
+            new Texture("Theo_dialogue_1.png"),     // 4
+            new Texture("Game_controls.png")        // 5
         };
-        typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
-        typeSound.play(1.0F);
-        
-        dialogueHasSound = new boolean[] {
-        true,  // Narrator 1 -> Sound ON
-        false, // Letter 2   -> Sound OFF
-        true,  // Narrator 2 -> Sound ON
-        false   // Narrator 3 -> Sound ON
-    };
 
-    // Start the first sound ONLY if the first screen is a narrator box
-    if (dialogueHasSound[0]) {
-        typeSound.play(1.0F);
-        soundPlaying = true;
-    } else {
-        soundPlaying = false;
-    }
+        // sound logic (Must have 6 booleans)
+        dialogueHasSound = new boolean[] { true, false, true, false, false, false };
+
+        typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
+
+        // Start initial sound if necessary
+        if (dialogueHasSound[0]) {
+            typeSound.play(1.0F);
+            soundPlaying = true;
+        }
 
         // world assets
         backgroundTexture = new Texture("background1.png");
-        playerIdle = new Texture("standing_still.png");
 
         // pause menu assets
         pauseBg = new Texture("pause_screen.png");
-
         resumeTex = new Texture("resume_button.png");
-        resumeButton = new ImageButton(
-            new TextureRegionDrawable(new TextureRegion(resumeTex))
-        );
+        quitTex = new Texture("quitbutton.png");
+
+        resumeButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(resumeTex)));
         resumeButton.setPosition(540, 400);
         resumeButton.setSize(200, 80);
         resumeButton.addListener(new ClickListener() {
@@ -115,14 +97,10 @@ public class GameScreen implements Screen {
                     state = State.RUNNING;
                     typeSound.resume();
                 }
-                
             }
         });
 
-        quitTex = new Texture("quitbutton.png");
-        quitButton = new ImageButton(
-            new TextureRegionDrawable(new TextureRegion(quitTex))
-        );
+        quitButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(quitTex)));
         quitButton.setPosition(540, 280);
         quitButton.setSize(200, 80);
         quitButton.addListener(new ClickListener() {
@@ -136,126 +114,129 @@ public class GameScreen implements Screen {
 
         stage.addActor(resumeButton);
         stage.addActor(quitButton);
-
-        // animation frames for player moving
-        leftFrames = new Texture[]{new Texture("left(1).png"), new Texture("left(2).png"), new Texture("left(3).png")};
-        rightFrames = new Texture[]{new Texture("right(1).png"), new Texture("right(2).png"), new Texture("right(3).png")};
-        currentPlayerTexture = playerIdle;
-
         inputSet = false;
     }
 
     @Override
-public void render(float delta) {
-    // 1. Update Fade Logic (Must happen every frame)
-    if (fadeAlpha > 0) {
-        fadeAlpha -= delta * fadeSpeed;
-        if (fadeAlpha < 0) fadeAlpha = 0;
-    }
+    public void render(float delta) {
+        // 1. Update Fade Logic
+        if (fadeAlpha > 0) {
+            fadeAlpha -= delta * fadeSpeed;
+            if (fadeAlpha < 0) fadeAlpha = 0;
+        }
 
-    // 2. ESCAPE/PAUSE COMMAND
-    if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+        // 2. ESCAPE/PAUSE
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            if (state == State.RUNNING) {
+                state = State.PAUSED;
+                typeSound.pause();
+            } else {
+                state = State.RUNNING;
+                typeSound.resume();
+            }
+        }
+
         if (state == State.RUNNING) {
-            state = State.PAUSED;
-            typeSound.pause();
-        } else {
-            state = State.RUNNING;
-            typeSound.resume();
+            updateGame(delta);
+        }
+
+        if (!inputSet) {
+            Gdx.input.setInputProcessor(stage);
+            inputSet = true;
+        }
+
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        batch.setProjectionMatrix(stage.getCamera().combined);
+        batch.begin();
+
+        // LAYER 1: The Town (Shows after Game_controls at Index 5 is done)
+        if (currentDialogueIndex >= 6) { 
+            batch.draw(backgroundTexture, 0, 0, 1280, 720);
+            player.draw(batch); 
+        }
+
+        // LAYER 2: Dialogue Overlay
+        if (currentDialogueIndex < dialogueScreens.length) {
+            batch.draw(dialogueScreens[currentDialogueIndex], 0, 0, 1280, 720);
+        }
+
+        // LAYER 3: Menus
+        if (state == State.PAUSED) {
+            batch.draw(pauseBg, 0, 0, 1280, 720);
+        }
+
+        // LAYER 4: Fade
+        if (fadeAlpha > 0) {
+            batch.setColor(0, 0, 0, fadeAlpha); 
+            batch.draw(pauseBg, 0, 0, 1280, 720); 
+            batch.setColor(1, 1, 1, 1); 
+        }
+
+        batch.end();
+
+        if (state == State.PAUSED) {
+            stage.act(delta);
+            stage.draw();
         }
     }
 
-    // 3. GAME LOGIC (Only runs when not paused)
-    if (state == State.RUNNING) {
-        updateGame(delta);
+    private void updateGame(float delta) {
+    // 1. SOUND TIMER LOGIC
+    if (soundPlaying) {
+        soundTimer += delta;
+        if (soundTimer >= 4.0F) { 
+            typeSound.stop(); 
+            soundPlaying = false; 
+        }
     }
 
-    // 4. INPUT PROCESSOR SETUP
-    if (!inputSet) {
-        Gdx.input.setInputProcessor(stage);
-        inputSet = true;
-    }
-
-    // 5. DRAWING
-    Gdx.gl.glClearColor(0, 0, 0, 1);
-    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-    batch.setProjectionMatrix(stage.getCamera().combined);
-    
-    // --- START BATCH ---
-    batch.begin();
-
-    // 1. LAYER 1: The Town (Background + Player)
-    // We start drawing the town as soon as we hit Box 3
-    if (currentDialogueIndex >= 2) { 
-        batch.draw(backgroundTexture, 0, 0, 1280, 720);
-        player.draw(batch); 
-    }
-
-    // 2. LAYER 2: The Dialogue Overlay
-    // This draws whatever box we are currently on
+    // 2. DIALOGUE CONTROLS (Only runs if we haven't finished the intro)
     if (currentDialogueIndex < dialogueScreens.length) {
-        batch.draw(dialogueScreens[currentDialogueIndex], 0, 0, 1280, 720);
+        
+        // --- GO FORWARD (Right Arrow or Click) ---
+        if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) || Gdx.input.justTouched()) {
+            advanceDialogue();
+        }
+        
+        // --- GO BACKWARD (Left Arrow) ---
+        else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
+            if (currentDialogueIndex > 0) {
+                currentDialogueIndex--;
+                resetDialogueEffects();
+            }
+        }
     }
 
-    // 3. LAYER 3: Menus & Transitions
-    // Draw Pause Tint
-    if (state == State.PAUSED) {
-        batch.draw(pauseBg, 0, 0, 1280, 720);
-    }
-
-    // Draw Fade Transition (Must be the absolute last thing in the batch)
-    if (fadeAlpha > 0) {
-        batch.setColor(0, 0, 0, fadeAlpha); 
-        batch.draw(pauseBg, 0, 0, 1280, 720); 
-        batch.setColor(1, 1, 1, 1); 
-    }
-
-    batch.end();
-
-    // 6. DRAW STAGE (Buttons)
-    // Stage has its own internal batch.begin/end, so it stays outside yours.
-    if (state == State.PAUSED) {
-        stage.act(delta);
-        stage.draw();
+    // 3. MOVEMENT LOGIC (Only runs when ALL dialogue is finished)
+    else { 
+        player.update(delta);
     }
 }
-private void updateGame(float delta) {
-        // 1. SOUND TIMER (Stops sound after 4 seconds)
-        if (soundPlaying) {
-            soundTimer += delta;
-            if (soundTimer >= 4.0F) { 
-                typeSound.stop(); 
-                soundPlaying = false; 
-            }
-        }
 
-        // 2. DIALOGUE CLICK LOGIC
-        if (currentDialogueIndex < dialogueScreens.length) {
-            if (Gdx.input.justTouched()) {
-                currentDialogueIndex++; 
+/** * Helper method to handle moving forward and resetting sounds/fades
+ */
+private void advanceDialogue() {
+    currentDialogueIndex++; 
+    resetDialogueEffects();
+}
 
-                fadeAlpha = 1.0f; // This triggers the fade for the NEW screen
-                
-                // Reset for the next screen
-                typeSound.stop();
-                soundTimer = 0.0F;
+/**
+ * Resets the fade and sound whenever we change screens
+ */
+private void resetDialogueEffects() {
+    fadeAlpha = 1.0f;
+    typeSound.stop();
+    soundTimer = 0.0F;
 
-                // Should this new index play a sound?
-                if (currentDialogueIndex < dialogueScreens.length && dialogueHasSound[currentDialogueIndex]) {
-                    typeSound.play(1.0F);
-                    soundPlaying = true;
-                } else {
-                    soundPlaying = false; 
-                }
-            }
-        }
-
-        // 3. MOVEMENT LOGIC (Only runs when dialogue is finished)
-        if (currentDialogueIndex >= dialogueScreens.length) { 
-        
-        // This one line replaces all your old movement IF statements!
-        player.update(delta);
-    } // End of updateGame
+    // Check if the NEW index should play sound
+    if (currentDialogueIndex < dialogueHasSound.length && dialogueHasSound[currentDialogueIndex]) {
+        typeSound.play(1.0F);
+        soundPlaying = true;
+    } else {
+        soundPlaying = false; 
+    }
 }
 
     @Override
@@ -274,19 +255,17 @@ private void updateGame(float delta) {
 
     @Override
     public void dispose() {
-    batch.dispose();
-    stage.dispose();
-    backgroundTexture.dispose();
-    playerIdle.dispose();
-    pauseBg.dispose();
-    typeSound.dispose();
-    
-    // Dispose all dialogue textures in the array
-    for (Texture t : dialogueScreens) {
-        if (t != null) t.dispose();
+        batch.dispose();
+        stage.dispose();
+        backgroundTexture.dispose();
+        pauseBg.dispose();
+        typeSound.dispose();
+        resumeTex.dispose();
+        quitTex.dispose();
+        
+        for (Texture t : dialogueScreens) {
+            if (t != null) t.dispose();
+        }
+        player.dispose(); // Important: dispose textures inside Player class too
     }
-    
-    for (Texture t : leftFrames) t.dispose();
-    for (Texture t : rightFrames) t.dispose();
-}
 }

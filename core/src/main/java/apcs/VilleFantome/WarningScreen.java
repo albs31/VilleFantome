@@ -87,6 +87,7 @@ public class WarningScreen implements Screen {
     @Override public void pause() {}
     @Override public void resume() {}
 
+
     @Override
     public void dispose() {
         if (batch != null) batch.dispose();

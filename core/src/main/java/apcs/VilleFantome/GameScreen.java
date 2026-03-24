@@ -39,6 +39,9 @@ public class GameScreen implements Screen {
     private float fadeAlpha = 1.0f; 
     private float fadeSpeed = 3.5f; 
 
+    private float movementDelayTimer = 0.0f;
+private final float MAX_DELAY = 0.5f; // 1.0 second pause. Change this to 0.5f for a shorter pause.
+
     public GameScreen(Main game) {
         this.game = game;
     }
@@ -47,7 +50,7 @@ public class GameScreen implements Screen {
     public void show() {
         batch = new SpriteBatch();
         stage = new Stage(new FitViewport(1280, 720));
-        player = new Player(600, 20);
+        player = new Player(0, 20);
 
         dialogueScreens = new Texture[] {
             new Texture("Narrator_box1.png"),      
@@ -56,10 +59,11 @@ public class GameScreen implements Screen {
             new Texture("Theo_dialogue_2.png"),     
             new Texture("Theo_dialogue_1.png"),     
             new Texture("Game_controls.png"),    
-            new Texture("Objective1.png")    
+            new Texture("Objective1.png")   
+            
         };
 
-        dialogueHasSound = new boolean[] { true, false, true, false, false, false, false };
+        dialogueHasSound = new boolean[] { true, false, true, false, false, false, false};
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
 
         if (dialogueHasSound[0]) {
@@ -152,37 +156,52 @@ public class GameScreen implements Screen {
     }
 
     private void updateGame(float delta) {
-        if (showControls) return;
+    if (showControls) return;
 
-        if (soundPlaying) {
-            soundTimer += delta;
-            if (soundTimer >= 4.0F) { typeSound.stop(); soundPlaying = false; }
-        }
-
-        if (currentDialogueIndex < dialogueScreens.length) {
-            if (Gdx.input.justTouched() || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
-                currentDialogueIndex++;
-                resetDialogueEffects();
-            } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && currentDialogueIndex > 0) {
-                currentDialogueIndex--;
-                resetDialogueEffects();
-            }
-        } else {
-            player.update(delta);
-        }
+    if (soundPlaying) {
+        soundTimer += delta;
+        if (soundTimer >= 4.0F) { typeSound.stop(); soundPlaying = false; }
     }
 
-    private void resetDialogueEffects() {
-        fadeAlpha = 1.0f;
-        typeSound.stop();
-        soundTimer = 0.0F;
-        if (currentDialogueIndex < dialogueHasSound.length && dialogueHasSound[currentDialogueIndex]) {
-            typeSound.play(1.0F);
-            soundPlaying = true;
-        } else {
-            soundPlaying = false;
+    // PHASE 1: Dialogue is still active
+    if (currentDialogueIndex < dialogueScreens.length) {
+        if (Gdx.input.justTouched() || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
+            currentDialogueIndex++;
+            resetDialogueEffects();
+            
+            // If we JUST clicked past the last screen (Index 5), 
+            // the timer starts at 0 automatically.
+        } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && currentDialogueIndex > 0) {
+            currentDialogueIndex--;
+            resetDialogueEffects();
         }
+    } 
+    
+    // PHASE 2: Dialogue is finished, but we are in the "Small Pause"
+    else if (movementDelayTimer < MAX_DELAY) {
+        movementDelayTimer += delta; // Counting up to 1 second
+        // Player is frozen here because we haven't called player.update yet!
+    } 
+    
+    // PHASE 3: Pause is over, allow movement
+    else {
+        player.update(delta);
     }
+}
+
+private void resetDialogueEffects() {
+    fadeAlpha = 1.0f;
+    typeSound.stop();
+    soundTimer = 0.0F;
+
+    // Check if the NEW index should play sound
+    if (currentDialogueIndex < dialogueHasSound.length && dialogueHasSound[currentDialogueIndex]) {
+        typeSound.play(1.0F);
+        soundPlaying = true;
+    } else {
+        soundPlaying = false; 
+    }
+}
 
     @Override public void resize(int w, int h) { stage.getViewport().update(w, h, true); }
     @Override public void hide() { Gdx.input.setInputProcessor(null); inputSet = false; }

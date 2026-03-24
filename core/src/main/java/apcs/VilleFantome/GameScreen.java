@@ -55,10 +55,11 @@ public class GameScreen implements Screen {
             new Texture("Narrator_box2.png"),       
             new Texture("Theo_dialogue_2.png"),     
             new Texture("Theo_dialogue_1.png"),     
-            new Texture("Game_controls.png")        
+            new Texture("Game_controls.png"),    
+            new Texture("Narrator_box3.png")    
         };
 
-        dialogueHasSound = new boolean[] { true, false, true, true, true, false };
+        dialogueHasSound = new boolean[] { true, false, true, false, false, false, false };
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
 
         if (dialogueHasSound[0]) {
@@ -125,7 +126,7 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
 
-        if (currentDialogueIndex >= 6) { 
+        if (currentDialogueIndex >= 7) { 
             batch.draw(backgroundTexture, 0, 0, 1280, 720);
             player.draw(batch); 
         }

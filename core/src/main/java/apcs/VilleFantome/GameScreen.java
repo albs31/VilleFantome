@@ -34,7 +34,7 @@ public class GameScreen implements Screen {
     private Texture[] dialogueScreens;
     private boolean[] dialogueHasSound;
     private int currentDialogueIndex = 0;
-
+    
     private Sound typeSound;
     private float soundTimer = 0.0F;
     private boolean soundPlaying = false;
@@ -83,11 +83,11 @@ public class GameScreen implements Screen {
         if (isReturning) {
             currentDialogueIndex = dialogueScreens.length; 
             player = new Player(1100, 20); 
-            movementDelayTimer = MAX_DELAY; // Skips the pause when returning
+            movementDelayTimer = MAX_DELAY; 
         } else {
             currentDialogueIndex = 0;
             player = new Player(10, 20);
-            movementDelayTimer = 0.0f; // Triggers intro pause
+            movementDelayTimer = 0.0f; 
             if (dialogueHasSound[0]) {
                 typeSound.play(1.0F);
                 soundPlaying = true;
@@ -103,7 +103,7 @@ public class GameScreen implements Screen {
 
     private void setupPauseMenu() {
         resumeButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(resumeTex)));
-        resumeButton.setPosition(500, 300); 
+        resumeButton.setPosition(500, 300);
         resumeButton.setSize(300, 120);
         resumeButton.addListener(new ClickListener() {
             @Override
@@ -114,7 +114,7 @@ public class GameScreen implements Screen {
         });
 
         quitButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(quitTex)));
-        quitButton.setPosition(500, 300); 
+        quitButton.setPosition(500, 200);
         quitButton.setSize(300, 120);
         quitButton.addListener(new ClickListener() {
             @Override
@@ -145,14 +145,15 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
 
-        if (currentDialogueIndex >= dialogueScreens.length) {
+        if (currentDialogueIndex < dialogueScreens.length) {
+            Texture currentTex = showControls ? dialogueScreens[5] : dialogueScreens[currentDialogueIndex];
+            batch.draw(currentTex, 0, 0, 1280, 720);
+        } else {
             batch.draw(currentArea == 1 ? background1 : background2, 0, 0, 1280, 720);
             player.draw(batch);
             if (showEnterSign) {
-                batch.draw(enterSign, (1280 / 2f) - (enterSign.getWidth() / 2f), 400);
+                batch.draw(enterSign, 640 - (enterSign.getWidth() / 2f), 400);
             }
-        } else {
-            batch.draw(showControls ? dialogueScreens[5] : dialogueScreens[currentDialogueIndex], 0, 0, 1280, 720);
         }
 
         if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
@@ -183,30 +184,20 @@ public class GameScreen implements Screen {
                 currentDialogueIndex--;
                 resetDialogueEffects();
             }
-        } 
-        else if (movementDelayTimer < MAX_DELAY) {
+        } else if (movementDelayTimer < MAX_DELAY) {
             movementDelayTimer += delta;
-            
-            // Auto-walk logic for entering screens
-            if (currentArea == 2 && player.x < 50) {
-                player.x += 250 * delta; 
-            } else if (currentArea == 1 && player.x > 1100) {
-                player.x -= 250 * delta;
-            }
-        } 
-        else {
+            if (currentArea == 2) player.x += 250 * delta; 
+            else if (currentArea == 1 && player.x > 1100) player.x -= 250 * delta;
+        } else {
             player.update(delta);
 
-            // FIXED AREA SWITCHING: Reset timer to MAX_DELAY - 0.2 to allow tiny auto-walk but NO full pause
+            if (currentArea == 1 && player.x < 0);
+            if (currentArea == 2 && player.x > 1050) player.x = 1050;
+
             if (currentArea == 1 && player.x > 1275) {
-                currentArea = 2;
-                player.x = -150; 
-                movementDelayTimer = MAX_DELAY - 0.2f; // Slight auto-walk, no story pause
-            } 
-            else if (currentArea == 2 && player.x < -160) {
-                currentArea = 1;
-                player.x = 1300; 
-                movementDelayTimer = MAX_DELAY - 0.2f; // Slight auto-walk, no story pause
+                currentArea = 2; player.x = -150; movementDelayTimer = MAX_DELAY - 0.2f;
+            } else if (currentArea == 2 && player.x < -160) {
+                currentArea = 1; player.x = 1300; movementDelayTimer = MAX_DELAY - 0.2f;
             }
 
             showEnterSign = false;

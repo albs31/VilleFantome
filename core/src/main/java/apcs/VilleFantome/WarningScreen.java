@@ -46,10 +46,10 @@ public class WarningScreen implements Screen {
         batch.draw(warningTexture, 0.0F, 0.0F, 1280.0F, 720.0F);
         batch.end();
 
-        if (Gdx.input.justTouched() || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-            Gdx.input.setInputProcessor(null);
-            game.setScreen(new GameScreen(game));
-        }
+       if (Gdx.input.justTouched() || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+    Gdx.input.setInputProcessor(null);
+    game.setScreen(new GameScreen(game, false)); 
+}
     }
 
     @Override

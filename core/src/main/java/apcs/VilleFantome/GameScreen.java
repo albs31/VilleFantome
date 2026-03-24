@@ -98,8 +98,8 @@ public class GameScreen implements Screen {
 
     private void setupPauseMenu() {
         resumeButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(resumeTex)));
-        resumeButton.setPosition(540, 400);
-        resumeButton.setSize(200, 80);
+        resumeButton.setPosition(500, 300);
+        resumeButton.setSize(300, 120);
         resumeButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -109,8 +109,8 @@ public class GameScreen implements Screen {
         });
 
         quitButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(quitTex)));
-        quitButton.setPosition(540, 280);
-        quitButton.setSize(200, 80);
+        quitButton.setPosition(500, 200);
+        quitButton.setSize(300, 120);
         quitButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {

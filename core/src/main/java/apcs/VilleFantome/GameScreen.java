@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
@@ -19,28 +20,33 @@ public class GameScreen implements Screen {
     private Main game;
     private SpriteBatch batch;
     private Stage stage;
-    private boolean inputSet = false;
     private Player player;
     private boolean showControls = false;
 
     private enum State { RUNNING, PAUSED }
     private State state = State.RUNNING;
+
     private Texture pauseBg, resumeTex, quitTex;
     private ImageButton resumeButton, quitButton;
 
     private Texture[] dialogueScreens;
     private boolean[] dialogueHasSound;
     private int currentDialogueIndex = 0;
+
     private Sound typeSound;
     private float soundTimer = 0.0F;
     private boolean soundPlaying = false;
 
     private Texture backgroundTexture;
-    private float fadeAlpha = 1.0f; 
-    private float fadeSpeed = 3.5f; 
+    private float fadeAlpha = 1.0f;
+    private float fadeSpeed = 3.5f;
 
-    private float movementDelayTimer = 0.0f;
-private final float MAX_DELAY = 0.5f; // 1.0 second pause. Change this to 0.5f for a shorter pause.
+    private Texture enterSign;
+    private Rectangle door1Bounds;
+    private Rectangle door2Bounds;
+    private Rectangle playerBounds;
+    private boolean showEnterSign = false;
+    private int currentDoor = 0;
 
     public GameScreen(Main game) {
         this.game = game;
@@ -50,31 +56,42 @@ private final float MAX_DELAY = 0.5f; // 1.0 second pause. Change this to 0.5f f
     public void show() {
         batch = new SpriteBatch();
         stage = new Stage(new FitViewport(1280, 720));
-        player = new Player(0, 20);
+
+        // make sure raw keyboard/touch input works in gameplay
+        Gdx.input.setInputProcessor(null);
+
+        player = new Player(600, 20);
 
         dialogueScreens = new Texture[] {
-            new Texture("Narrator_box1.png"),      
-            new Texture("Theo_Diary_Entry1.png"),   
-            new Texture("Narrator_box2.png"),       
-            new Texture("Theo_dialogue_2.png"),     
-            new Texture("Theo_dialogue_1.png"),     
-            new Texture("Game_controls.png"),    
-            new Texture("Objective1.png")   
-            
+            new Texture("Narrator_box1.png"),
+            new Texture("Theo_Diary_Entry1.png"),
+            new Texture("Narrator_box2.png"),
+            new Texture("Theo_dialogue_2.png"),
+            new Texture("Theo_dialogue_1.png"),
+            new Texture("Game_controls.png"),
+            new Texture("Objective1.png")
         };
 
-        dialogueHasSound = new boolean[] { true, false, true, false, false, false, false};
-        typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
+        dialogueHasSound = new boolean[] { true, false, true, false, false, false, false };
 
+        typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
         if (dialogueHasSound[0]) {
             typeSound.play(1.0F);
             soundPlaying = true;
         }
 
         backgroundTexture = new Texture("background1.png");
+
         pauseBg = new Texture("pause_screen.png");
         resumeTex = new Texture("resume_button.png");
         quitTex = new Texture("quitbutton.png");
+
+        enterSign = new Texture("entersign.png");
+
+        // tweak these for your exact door positions
+        door1Bounds = new Rectangle(90, 120, 110, 180);
+        door2Bounds = new Rectangle(830, 120, 110, 180);
+        playerBounds = new Rectangle();
 
         resumeButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(resumeTex)));
         resumeButton.setPosition(540, 400);
@@ -83,6 +100,7 @@ private final float MAX_DELAY = 0.5f; // 1.0 second pause. Change this to 0.5f f
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 state = State.RUNNING;
+                Gdx.input.setInputProcessor(null);
                 typeSound.resume();
             }
         });
@@ -114,14 +132,18 @@ private final float MAX_DELAY = 0.5f; // 1.0 second pause. Change this to 0.5f f
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
-            if (state == State.PAUSED) typeSound.pause(); else typeSound.resume();
+
+            if (state == State.PAUSED) {
+                Gdx.input.setInputProcessor(stage);
+                typeSound.pause();
+            } else {
+                Gdx.input.setInputProcessor(null);
+                typeSound.resume();
+            }
         }
 
-        if (state == State.RUNNING) updateGame(delta);
-
-        if (!inputSet) {
-            Gdx.input.setInputProcessor(stage);
-            inputSet = true;
+        if (state == State.RUNNING) {
+            updateGame(delta);
         }
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
@@ -130,23 +152,29 @@ private final float MAX_DELAY = 0.5f; // 1.0 second pause. Change this to 0.5f f
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
 
-        if (currentDialogueIndex >= 7) { 
+        if (currentDialogueIndex >= dialogueScreens.length) {
             batch.draw(backgroundTexture, 0, 0, 1280, 720);
-            player.draw(batch); 
-        }
+            player.draw(batch);
 
-        if (showControls) {
-            batch.draw(dialogueScreens[5], 0, 0, 1280, 720); 
-        } else if (currentDialogueIndex < dialogueScreens.length) {
+            if (showEnterSign) {
+                batch.draw(enterSign, 390, 420, 500, 230);
+            }
+        } else if (showControls) {
+            batch.draw(dialogueScreens[5], 0, 0, 1280, 720);
+        } else {
             batch.draw(dialogueScreens[currentDialogueIndex], 0, 0, 1280, 720);
         }
 
-        if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
-        if (fadeAlpha > 0) {
-            batch.setColor(0, 0, 0, fadeAlpha); 
-            batch.draw(pauseBg, 0, 0, 1280, 720); 
-            batch.setColor(1, 1, 1, 1); 
+        if (state == State.PAUSED) {
+            batch.draw(pauseBg, 0, 0, 1280, 720);
         }
+
+        if (fadeAlpha > 0) {
+            batch.setColor(0, 0, 0, fadeAlpha);
+            batch.draw(pauseBg, 0, 0, 1280, 720);
+            batch.setColor(1, 1, 1, 1);
+        }
+
         batch.end();
 
         if (state == State.PAUSED) {
@@ -156,62 +184,95 @@ private final float MAX_DELAY = 0.5f; // 1.0 second pause. Change this to 0.5f f
     }
 
     private void updateGame(float delta) {
-    if (showControls) return;
+        if (showControls) return;
 
-    if (soundPlaying) {
-        soundTimer += delta;
-        if (soundTimer >= 4.0F) { typeSound.stop(); soundPlaying = false; }
-    }
-
-    // PHASE 1: Dialogue is still active
-    if (currentDialogueIndex < dialogueScreens.length) {
-        if (Gdx.input.justTouched() || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
-            currentDialogueIndex++;
-            resetDialogueEffects();
-            
-            // If we JUST clicked past the last screen (Index 5), 
-            // the timer starts at 0 automatically.
-        } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && currentDialogueIndex > 0) {
-            currentDialogueIndex--;
-            resetDialogueEffects();
+        if (soundPlaying) {
+            soundTimer += delta;
+            if (soundTimer >= 4.0F) {
+                typeSound.stop();
+                soundPlaying = false;
+            }
         }
-    } 
-    
-    // PHASE 2: Dialogue is finished, but we are in the "Small Pause"
-    else if (movementDelayTimer < MAX_DELAY) {
-        movementDelayTimer += delta; // Counting up to 1 second
-        // Player is frozen here because we haven't called player.update yet!
-    } 
-    
-    // PHASE 3: Pause is over, allow movement
-    else {
-        player.update(delta);
+
+        if (currentDialogueIndex < dialogueScreens.length) {
+            if (Gdx.input.justTouched() || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
+                currentDialogueIndex++;
+                resetDialogueEffects();
+            } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && currentDialogueIndex > 0) {
+                currentDialogueIndex--;
+                resetDialogueEffects();
+            }
+        } else {
+            player.update(delta);
+
+            // tweak this if the enter popup appears too early/late
+            playerBounds.set(player.getX() + 170, player.getY() + 40, 140, 260);
+
+            showEnterSign = false;
+            currentDoor = 0;
+
+            if (playerBounds.overlaps(door1Bounds)) {
+                showEnterSign = true;
+                currentDoor = 1;
+            } else if (playerBounds.overlaps(door2Bounds)) {
+                showEnterSign = true;
+                currentDoor = 2;
+            }
+
+            if (showEnterSign && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                if (currentDoor == 1) {
+                    game.setScreen(new House1Screen(game));
+                } else if (currentDoor == 2) {
+                    game.setScreen(new House2Screen(game));
+                }
+            }
+        }
     }
-}
 
-private void resetDialogueEffects() {
-    fadeAlpha = 1.0f;
-    typeSound.stop();
-    soundTimer = 0.0F;
+    private void resetDialogueEffects() {
+        fadeAlpha = 1.0f;
+        typeSound.stop();
+        soundTimer = 0.0F;
 
-    // Check if the NEW index should play sound
-    if (currentDialogueIndex < dialogueHasSound.length && dialogueHasSound[currentDialogueIndex]) {
-        typeSound.play(1.0F);
-        soundPlaying = true;
-    } else {
-        soundPlaying = false; 
+        if (currentDialogueIndex < dialogueHasSound.length && dialogueHasSound[currentDialogueIndex]) {
+            typeSound.play(1.0F);
+            soundPlaying = true;
+        } else {
+            soundPlaying = false;
+        }
     }
-}
 
-    @Override public void resize(int w, int h) { stage.getViewport().update(w, h, true); }
-    @Override public void hide() { Gdx.input.setInputProcessor(null); inputSet = false; }
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void dispose() {
-        batch.dispose(); stage.dispose(); backgroundTexture.dispose();
-        typeSound.dispose(); pauseBg.dispose();
-        resumeTex.dispose(); quitTex.dispose();
-        for (Texture t : dialogueScreens) t.dispose();
+    @Override
+    public void resize(int width, int height) {
+        stage.getViewport().update(width, height, true);
+    }
+
+    @Override
+    public void hide() {
+        Gdx.input.setInputProcessor(null);
+    }
+
+    @Override
+    public void pause() {}
+
+    @Override
+    public void resume() {}
+
+    @Override
+    public void dispose() {
+        batch.dispose();
+        stage.dispose();
+        backgroundTexture.dispose();
+        typeSound.dispose();
+        pauseBg.dispose();
+        resumeTex.dispose();
+        quitTex.dispose();
+        enterSign.dispose();
+
+        for (Texture t : dialogueScreens) {
+            t.dispose();
+        }
+
         player.dispose();
     }
 }

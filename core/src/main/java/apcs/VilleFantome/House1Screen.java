@@ -11,6 +11,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 
 public class House1Screen implements Screen {
     private Main game;
+    private Inventory inventory;
     private SpriteBatch batch;
     private Stage stage;
     private Texture background;
@@ -24,6 +25,7 @@ public class House1Screen implements Screen {
         batch = new SpriteBatch();
         stage = new Stage(new FitViewport(1280, 720));
         background = new Texture("House1Screen.png");
+        inventory = new Inventory();
     }
 
     @Override
@@ -35,6 +37,9 @@ public class House1Screen implements Screen {
         batch.begin();
         batch.draw(background, 0, 0, 1280, 720);
         batch.end();
+
+        inventory.handleInput();
+        inventory.render(delta);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             game.setScreen(new GameScreen(game, true));
@@ -53,6 +58,7 @@ public class House1Screen implements Screen {
     public void dispose() {
         batch.dispose();
         stage.dispose();
+        inventory.dispose();
         background.dispose();
     }
 }

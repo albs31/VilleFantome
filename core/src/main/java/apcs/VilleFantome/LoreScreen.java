@@ -23,7 +23,7 @@ public class LoreScreen implements Screen {
     @Override
     public void show() {
         batch = new SpriteBatch();
-        loreImage = new Texture("lore.png");
+        loreImage = new Texture("spoilerwarning.png");
 
         stage = new Stage(new FitViewport(1280, 720));
 

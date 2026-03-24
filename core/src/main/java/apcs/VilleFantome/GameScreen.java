@@ -18,6 +18,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 
 public class GameScreen implements Screen {
     private Main game;
+    private Inventory inventory;
     private SpriteBatch batch;
     private Stage stage;
     private Player player;
@@ -59,6 +60,7 @@ public class GameScreen implements Screen {
     public void show() {
         batch = new SpriteBatch();
         stage = new Stage(new FitViewport(1280, 720));
+        inventory = new Inventory();
         Gdx.input.setInputProcessor(stage);
         
         fadeAlpha = 1.0f; 
@@ -164,6 +166,9 @@ public class GameScreen implements Screen {
             batch.setColor(1, 1, 1, 1);
         }
         batch.end();
+        
+        inventory.handleInput();
+        inventory.render(delta);
 
         if (state == State.PAUSED) { stage.act(delta); stage.draw(); }
     }
@@ -236,7 +241,7 @@ public class GameScreen implements Screen {
     @Override public void dispose() {
         batch.dispose(); stage.dispose(); background1.dispose(); background2.dispose();
         typeSound.dispose(); pauseBg.dispose(); resumeTex.dispose();
-        quitTex.dispose(); enterSign.dispose();
+        quitTex.dispose(); enterSign.dispose(); inventory.dispose();
         for (Texture t : dialogueScreens) t.dispose();
         player.dispose();
     }

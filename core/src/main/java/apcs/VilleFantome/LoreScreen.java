@@ -1,6 +1,7 @@
 package apcs.VilleFantome;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
@@ -43,6 +44,10 @@ public class LoreScreen implements Screen {
         batch.begin();
         batch.draw(loreImage, 0, 0, 1280, 720);
         batch.end();
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            game.setScreen(new LoadingScreen(game));
+        }
 
         stage.act(delta);
         stage.draw();

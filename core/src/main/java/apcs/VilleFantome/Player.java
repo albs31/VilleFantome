@@ -14,8 +14,8 @@ public class Player {
 
     // 2. POSITION & SIZE (Change these to make him bigger!)
     public float x, y;
-    private float drawWidth = 650.0f;  // Try a large number first to see the change
-    private float drawHeight = 500.0f; // Try a large number first to see the change
+    private float drawWidth = 550.0f;  // Try a large number first to see the change
+    private float drawHeight = 550.0f; // Try a large number first to see the change
     
     // 3. MOVEMENT & ANIMATION
     private float speed = 300.0f;
@@ -84,4 +84,10 @@ public class Player {
     // Getters for width/height in case GameScreen needs them
     public float getWidth() { return drawWidth; }
     public float getHeight() { return drawHeight; }
+
+    // Lets other screens change player size without changing this file again
+    public void setDrawSize(float width, float height) {
+        this.drawWidth = width;
+        this.drawHeight = height;
+    }
 }

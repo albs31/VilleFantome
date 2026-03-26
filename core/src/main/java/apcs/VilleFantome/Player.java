@@ -6,19 +6,16 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Player {
-    // 1. TEXTURES
     private Texture playerIdle;
     private Texture[] leftFrames;
     private Texture[] rightFrames;
     private Texture currentFrame;
 
-    // 2. POSITION & SIZE (Change these to make him bigger!)
     public float x, y;
-    private float drawWidth = 550.0f;  // Try a large number first to see the change
-    private float drawHeight = 550.0f; // Try a large number first to see the change
+    private float drawWidth = 550.0f;  
+    private float drawHeight = 550.0f; 
     
-    // 3. MOVEMENT & ANIMATION
-    private float speed = 300.0f;
+    private float speed = 220.0f; // Default speed
     private float animationTimer = 0.0f;
     private float frameDuration = 0.15f;
     private boolean moving = false;
@@ -27,7 +24,6 @@ public class Player {
         this.x = startX;
         this.y = startY;
 
-        // Load Assets
         playerIdle = new Texture("standing_still.png");
         leftFrames = new Texture[]{
             new Texture("left(1).png"), 
@@ -46,7 +42,6 @@ public class Player {
     public void update(float delta) {
         moving = false;
 
-        // LEFT Movement
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
             x -= speed * delta;
             animationTimer += delta;
@@ -54,7 +49,6 @@ public class Player {
             currentFrame = leftFrames[frameIndex];
             moving = true;
         } 
-        // RIGHT Movement
         else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
             x += speed * delta;
             animationTimer += delta;
@@ -63,7 +57,6 @@ public class Player {
             moving = true;
         }
 
-        // IDLE Logic
         if (!moving) {
             currentFrame = playerIdle;
             animationTimer = 0;
@@ -71,7 +64,6 @@ public class Player {
     }
 
     public void draw(SpriteBatch batch) {
-        // This uses the variables from the top of the class
         batch.draw(currentFrame, x, y, drawWidth, drawHeight);
     }
 
@@ -81,13 +73,16 @@ public class Player {
         for (Texture t : rightFrames) t.dispose();
     }
     
-    // Getters for width/height in case GameScreen needs them
     public float getWidth() { return drawWidth; }
     public float getHeight() { return drawHeight; }
 
-    // Lets other screens change player size without changing this file again
     public void setDrawSize(float width, float height) {
         this.drawWidth = width;
         this.drawHeight = height;
+    }
+
+    // NEW METHOD: Allows us to boost speed in the shop
+    public void setSpeed(float newSpeed) {
+        this.speed = newSpeed;
     }
 }

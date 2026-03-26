@@ -37,23 +37,26 @@ public class GameScreen implements Screen {
     private int currentDialogueIndex = 0;
 
     private Sound typeSound;
-    private float soundTimer = 0.0F;
+    private float soundTimer = 0.0f;
     private boolean soundPlaying = false;
 
     private float fadeAlpha = 1.0f;
     private float fadeSpeed = 3.5f;
 
-    private Rectangle door1Bounds, door2Bounds, playerBounds;
+    private Rectangle door1Bounds, playerBounds;
     private boolean showEnterSign = false;
-    private int currentDoor = 0;
 
     private float movementDelayTimer = 0.0f;
     private final float MAX_DELAY = 1.0f;
     private boolean isReturning;
+    
+    private float spawnX, spawnY;
 
-    public GameScreen(Main game, boolean isReturning) {
+    public GameScreen(Main game, boolean isReturning, float x, float y) {
         this.game = game;
         this.isReturning = isReturning;
+        this.spawnX = x;
+        this.spawnY = y;
     }
 
     @Override
@@ -62,8 +65,6 @@ public class GameScreen implements Screen {
         stage = new Stage(new FitViewport(1280, 720));
         inventory = new Inventory();
         Gdx.input.setInputProcessor(stage);
-
-        fadeAlpha = 1.0f;
 
         background1 = new Texture("background1.png");
         background2 = new Texture("townpart_2.png");
@@ -83,21 +84,29 @@ public class GameScreen implements Screen {
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
 
         if (isReturning) {
-            currentDialogueIndex = dialogueScreens.length;
-            player = new Player(1100, 20);
-            movementDelayTimer = MAX_DELAY;
-        } else {
+    // Skip the opening dialogue
+    currentDialogueIndex = dialogueScreens.length;
+    
+    // Spawn Theo where he was standing before entering the shop
+    player = new Player(spawnX, spawnY); 
+    
+    // THE PAUSE: Setting this to 0 means updateGame() won't move him 
+    // until it counts back up to 1.0 (MAX_DELAY)
+    movementDelayTimer = 0.0f; 
+    
+    // Optional: Reset fade so the town fades in from black
+    fadeAlpha = 1.0f; 
+    
+} else {
             currentDialogueIndex = 0;
             player = new Player(10, 20);
-            movementDelayTimer = 0.0f;
             if (dialogueHasSound[0]) {
-                typeSound.play(1.0F);
+                typeSound.play(1.0f);
                 soundPlaying = true;
             }
         }
 
-        door1Bounds = new Rectangle(550, 300, 110, 180);
-        door2Bounds = new Rectangle(830, 120, 110, 180);
+        door1Bounds = new Rectangle(730, 10, 20, 180);
         playerBounds = new Rectangle();
 
         setupPauseMenu();
@@ -111,7 +120,7 @@ public class GameScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 state = State.RUNNING;
-                typeSound.resume();
+                Gdx.input.setInputProcessor(null);
             }
         });
 
@@ -175,10 +184,7 @@ public class GameScreen implements Screen {
         inventory.handleInput();
         inventory.render(delta);
 
-        if (state == State.PAUSED) { 
-            stage.act(delta); 
-            stage.draw(); 
-        }
+        if (state == State.PAUSED) { stage.act(delta); stage.draw(); }
     }
 
     private void updateGame(float delta) {
@@ -186,7 +192,7 @@ public class GameScreen implements Screen {
 
         if (soundPlaying) {
             soundTimer += delta;
-            if (soundTimer >= 4.0F) { 
+            if (soundTimer >= 4.0f) { 
                 typeSound.stop(); 
                 soundPlaying = false; 
             }
@@ -202,34 +208,28 @@ public class GameScreen implements Screen {
             }
         } else if (movementDelayTimer < MAX_DELAY) {
             movementDelayTimer += delta;
-            if (currentArea == 2) player.x += 250 * delta;
-            else if (currentArea == 1 && player.x > 1100) player.x -= 250 * delta;
         } else {
             player.update(delta);
 
-            if (currentArea == 1 && player.x < 0);
-            if (currentArea == 2 && player.x > 1050) player.x = 1050;
-
             if (currentArea == 1 && player.x > 1275) {
-                currentArea = 2; 
-                player.x = -150; 
-                movementDelayTimer = MAX_DELAY - 0.2f;
-            } else if (currentArea == 2 && player.x < -160) {
-                currentArea = 1; 
-                player.x = 1300; 
-                movementDelayTimer = MAX_DELAY - 0.2f;
-            }
-
+    currentArea = 2; 
+    player.x = -100; // Changed from -150 to -100 (further from the edge)
+   
+} 
+else if (currentArea == 2 && player.x < -160) {
+    currentArea = 1; 
+    player.x = 1200; // Changed from 1300 to 1200 (further from the edge)
+    
+}
             showEnterSign = false;
             if (currentArea == 1) {
-                playerBounds.set(player.x + 170, player.y + 40, 140, 260);
+                playerBounds.set(player.x + 150, player.y + 40, 200, 400); 
                 if (playerBounds.overlaps(door1Bounds)) {
                     showEnterSign = true;
-                    currentDoor = 1;
                 }
 
                 if (showEnterSign && Gdx.input.isKeyJustPressed(Input.Keys.F)) {
-                    if (currentDoor == 1) game.setScreen(new PawnShopScreen(game));
+                    game.setScreen(new PawnShopScreen(game, player.x, player.y));
                 }
             }
         }
@@ -238,43 +238,23 @@ public class GameScreen implements Screen {
     private void resetDialogueEffects() {
         fadeAlpha = 1.0f;
         typeSound.stop();
-        soundTimer = 0.0F;
+        soundTimer = 0.0f;
         if (currentDialogueIndex < dialogueHasSound.length && dialogueHasSound[currentDialogueIndex]) {
-            typeSound.play(1.0F);
+            typeSound.play(1.0f);
             soundPlaying = true;
         } else { 
             soundPlaying = false; 
         }
     }
 
-    @Override 
-    public void resize(int w, int h) { 
-        stage.getViewport().update(w, h, true); 
-    }
-
-    @Override 
-    public void hide() { 
-        Gdx.input.setInputProcessor(null); 
-    }
-
-    @Override 
-    public void pause() {}
-
-    @Override 
-    public void resume() {}
-
-    @Override 
-    public void dispose() {
-        batch.dispose(); 
-        stage.dispose(); 
-        background1.dispose(); 
-        background2.dispose();
-        typeSound.dispose(); 
-        pauseBg.dispose(); 
-        resumeTex.dispose();
-        quitTex.dispose(); 
-        enterSign.dispose(); 
-        inventory.dispose();
+    @Override public void resize(int w, int h) { stage.getViewport().update(w, h, true); }
+    @Override public void hide() { Gdx.input.setInputProcessor(null); }
+    @Override public void pause() {}
+    @Override public void resume() {}
+    @Override public void dispose() {
+        batch.dispose(); stage.dispose(); background1.dispose(); background2.dispose();
+        typeSound.dispose(); pauseBg.dispose(); resumeTex.dispose();
+        quitTex.dispose(); enterSign.dispose(); inventory.dispose();
         for (Texture t : dialogueScreens) t.dispose();
         player.dispose();
     }

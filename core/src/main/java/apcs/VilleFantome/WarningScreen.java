@@ -47,9 +47,10 @@ public class WarningScreen implements Screen {
         batch.end();
 
        if (Gdx.input.justTouched() || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-    Gdx.input.setInputProcessor(null);
-    game.setScreen(new GameScreen(game, false)); 
-}
+            Gdx.input.setInputProcessor(null);
+            // Added 10, 20 as the starting coordinates for the first time Theo spawns
+            game.setScreen(new GameScreen(game, false, 10, 20)); 
+        }
     }
 
     @Override

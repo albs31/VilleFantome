@@ -13,6 +13,7 @@ public class Main extends Game {
 
         // Start the loading screen
         setScreen(new LoadingScreen(this)); 
+        
     }
 
     @Override
@@ -25,5 +26,8 @@ public class Main extends Game {
     public void dispose() {
         if (getScreen() != null) getScreen().dispose();
         if (player != null) player.stopMusic();
-    }
+ 
+   }
+    
+   
 }

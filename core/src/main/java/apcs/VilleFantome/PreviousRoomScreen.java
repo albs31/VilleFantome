@@ -23,14 +23,21 @@ public class PreviousRoomScreen implements Screen {
     private Stage stage;
     private Inventory inventory;
 
-    private enum State { RUNNING, PAUSED, EVIDENCE }
-    private State state = State.RUNNING;
+    private enum State { WAITING, RUNNING, PAUSED, EVIDENCE, DIALOGUE }
+    private State state = State.WAITING;
 
     private Texture pauseBg, resumeTex, quitTex;
     private ImageButton resumeButton, quitButton;
     private Texture pickupPrompt, evidenceTex1, evidenceTex2, evidenceTex3, evidenceTex4;
 
-    private int currentRoom = 1; // Now starts in Room 1
+    private DialogueManager entryDialogue;
+    private DialogueManager postEvidence1Dialogue;
+    private DialogueManager postEvidence2Dialogue;
+    private DialogueManager postEvidence3Dialogue;
+    private DialogueManager postEvidence4Dialogue;
+    private DialogueManager activeDialogue = null;
+
+    private int currentRoom = 1;
     private Rectangle playerBounds, exitHitbox, itemHitbox1, itemHitbox2, itemHitbox3, itemHitbox4;
     private boolean showExitSign = false;
     private boolean showPickupPrompt = false;
@@ -42,13 +49,24 @@ public class PreviousRoomScreen implements Screen {
 
     private float movementDelayTimer = 0f;
     private final float MAX_DELAY = 0.04f;
-    
+
+    private float entryDialogueTimer = 0f;
+    private final float ENTRY_DIALOGUE_DELAY = 2.0f;
+
+    private float evidenceCooldown = 0f;
+
     private float returnX, returnY;
 
     public PreviousRoomScreen(Main game, float x, float y) {
         this.game = game;
         this.returnX = x;
         this.returnY = y;
+    }
+
+    private void startDialogue(DialogueManager dialogue) {
+        activeDialogue = dialogue;
+        activeDialogue.start();
+        state = State.DIALOGUE;
     }
 
     @Override
@@ -70,19 +88,68 @@ public class PreviousRoomScreen implements Screen {
         evidenceTex3 = new Texture("scrapped letter 1.png");
         evidenceTex4 = new Texture("Scrapped letter 2.png");
 
-        // Spawn on the left side of Room 1
-        player = new Player(-200, -100); 
+        player = new Player(-200, -100);
         player.setDrawSize(1000, 1000);
-        player.setSpeed(335.0f); 
+        player.setSpeed(335.0f);
 
         playerBounds = new Rectangle();
-        
-        // Exit hitbox (to return to town) is now in Room 2 on the right side
-        exitHitbox = new Rectangle(1000, 0, 200, 720); 
-        itemHitbox1 = new Rectangle(150, 0, 200, 720); 
+        exitHitbox = new Rectangle(1000, 0, 200, 720);
+        itemHitbox1 = new Rectangle(150, 0, 200, 720);
         itemHitbox2 = new Rectangle(500, 0, 200, 720);
         itemHitbox3 = new Rectangle(400, 0, 200, 720);
         itemHitbox4 = new Rectangle(865, 0, 200, 720);
+
+        // SEQUENCE 1 — entry dialogue
+        entryDialogue = new DialogueManager(
+            new String[] { "PreviousRoomDialogue1.png" },
+            new float[]  { 0f },
+            () -> {
+                activeDialogue = null;
+                state = State.RUNNING;
+            }
+        );
+
+        // SEQUENCE 2 — after evidence 1
+        postEvidence1Dialogue = new DialogueManager(
+            new String[] { "PreviousRoomDialogue2.png" },
+            new float[]  { 0f },
+            () -> {
+                activeDialogue = null;
+                state = State.RUNNING;
+            }
+        );
+
+        // SEQUENCE 3 — after evidence 2
+        postEvidence2Dialogue = new DialogueManager(
+            new String[] { "PreviousRoomDialogue3.png" },
+            new float[]  { 0f },
+            () -> {
+                activeDialogue = null;
+                state = State.RUNNING;
+            }
+        );
+
+        // SEQUENCE 4 — after evidence 3
+        postEvidence3Dialogue = new DialogueManager(
+            new String[] { "PreviousRoomDialogue4.png" },
+            new float[]  { 0f },
+            () -> {
+                activeDialogue = null;
+                state = State.RUNNING;
+            }
+        );
+
+        // SEQUENCE 5 — after evidence 4
+        postEvidence4Dialogue = new DialogueManager(
+            new String[] { "PreviousRoomDialogue5.png" },
+            new float[]  { 0f },
+            () -> {
+                activeDialogue = null;
+                state = State.RUNNING;
+            }
+        );
+
+        state = State.WAITING;
 
         setupPauseMenu();
     }
@@ -115,12 +182,27 @@ public class PreviousRoomScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        if (state == State.EVIDENCE) {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-                state = State.RUNNING;
+        if (activeDialogue != null) activeDialogue.update(delta);
+
+        if (state == State.WAITING) {
+            entryDialogueTimer += delta;
+            player.update(delta);
+            if (entryDialogueTimer >= ENTRY_DIALOGUE_DELAY) {
+                startDialogue(entryDialogue);
             }
+        } else if (state == State.EVIDENCE) {
+            evidenceCooldown += delta;
+            if (evidenceCooldown > 0.2f && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                evidenceCooldown = 0f;
+                if (evidenceToShow == 1) startDialogue(postEvidence1Dialogue);
+                else if (evidenceToShow == 2) startDialogue(postEvidence2Dialogue);
+                else if (evidenceToShow == 3) startDialogue(postEvidence3Dialogue);
+                else if (evidenceToShow == 4) startDialogue(postEvidence4Dialogue);
+            }
+        } else if (state == State.DIALOGUE) {
+            // handled internally by DialogueManager
         } else {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            if (state != State.EVIDENCE && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
                 state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
                 Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
             }
@@ -138,13 +220,17 @@ public class PreviousRoomScreen implements Screen {
 
         if (currentRoom == 2 && showExitSign) batch.draw(exitSign, 0, 0, 1280, 720);
         if (showPickupPrompt) batch.draw(pickupPrompt, 0, 0, 1280, 720);
-        if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
+
         if (state == State.EVIDENCE) {
             if (evidenceToShow == 1) batch.draw(evidenceTex1, 0, 0, 1280, 720);
-            if (evidenceToShow == 2) batch.draw(evidenceTex2, 0, 0, 1280, 720);
-            if (evidenceToShow == 3) batch.draw(evidenceTex3, 0, 0, 1280, 720);
-            if (evidenceToShow == 4) batch.draw(evidenceTex4, 0, 0, 1280, 720);
+            else if (evidenceToShow == 2) batch.draw(evidenceTex2, 0, 0, 1280, 720);
+            else if (evidenceToShow == 3) batch.draw(evidenceTex3, 0, 0, 1280, 720);
+            else if (evidenceToShow == 4) batch.draw(evidenceTex4, 0, 0, 1280, 720);
         }
+
+        if (activeDialogue != null) activeDialogue.render(batch);
+
+        if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
 
         batch.end();
 
@@ -173,6 +259,8 @@ public class PreviousRoomScreen implements Screen {
                     Inventory.addItem("J's Letter 1", "J's Letter 1.png");
                     item1PickedUp = true;
                     evidenceToShow = 1;
+                    evidenceCooldown = 0f;
+                    showPickupPrompt = false;
                     state = State.EVIDENCE;
                 }
             }
@@ -182,6 +270,8 @@ public class PreviousRoomScreen implements Screen {
                     Inventory.addItem("J's Letter 2", "J's Letter 2.png");
                     item2PickedUp = true;
                     evidenceToShow = 2;
+                    evidenceCooldown = 0f;
+                    showPickupPrompt = false;
                     state = State.EVIDENCE;
                 }
             }
@@ -201,6 +291,8 @@ public class PreviousRoomScreen implements Screen {
                     Inventory.addItem("Scrapped Letter 1", "scrapped letter 1.png");
                     item3PickedUp = true;
                     evidenceToShow = 3;
+                    evidenceCooldown = 0f;
+                    showPickupPrompt = false;
                     state = State.EVIDENCE;
                 }
             }
@@ -210,6 +302,8 @@ public class PreviousRoomScreen implements Screen {
                     Inventory.addItem("Scrapped Letter 2", "Scrapped letter 2.png");
                     item4PickedUp = true;
                     evidenceToShow = 4;
+                    evidenceCooldown = 0f;
+                    showPickupPrompt = false;
                     state = State.EVIDENCE;
                 }
             }
@@ -226,20 +320,14 @@ public class PreviousRoomScreen implements Screen {
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void dispose() {
-        batch.dispose();
-        roomPt1.dispose();
-        roomPt2.dispose();
-        pauseBg.dispose();
+        batch.dispose(); stage.dispose(); inventory.dispose(); player.dispose();
+        roomPt1.dispose(); roomPt2.dispose(); pauseBg.dispose();
+        resumeTex.dispose(); quitTex.dispose(); exitSign.dispose();
         pickupPrompt.dispose();
-        evidenceTex1.dispose();
-        evidenceTex2.dispose();
-        evidenceTex3.dispose();
-        evidenceTex4.dispose();
-        resumeTex.dispose();
-        quitTex.dispose();
-        exitSign.dispose();
-        player.dispose();
-        inventory.dispose();
-        stage.dispose();
+        evidenceTex1.dispose(); evidenceTex2.dispose();
+        evidenceTex3.dispose(); evidenceTex4.dispose();
+        entryDialogue.dispose(); postEvidence1Dialogue.dispose();
+        postEvidence2Dialogue.dispose(); postEvidence3Dialogue.dispose();
+        postEvidence4Dialogue.dispose();
     }
 }

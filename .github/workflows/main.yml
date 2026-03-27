@@ -1,0 +1,29 @@
+name: Build and Deploy to Itch.io
+
+on:
+  push:
+    branches: [ main ] # Runs every time you push to the 'main' branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17' # Match your project's Java version
+          distribution: 'temurin'
+
+      - name: Build with TeaVM
+        run: ./gradlew teavm:build
+
+      - name: Deploy to Itch.io
+        uses: josephbmanley/python-itchio-butler-action@v1.0.3
+        with:
+          package: teavm/build/dist
+          itchnick: YOUR_ITCH_USERNAME
+          itchgame: YOUR_GAME_SLUG # The part of the URL after itch.io/
+          channel: html5
+          user_key: ${{ secrets.BUTLER_API_KEY }}

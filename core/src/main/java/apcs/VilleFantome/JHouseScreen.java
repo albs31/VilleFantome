@@ -22,12 +22,17 @@ public class JHouseScreen implements Screen {
     private Player player;
     private Inventory inventory;
 
-    private enum State { RUNNING, PAUSED, EVIDENCE }
+    private enum State { RUNNING, PAUSED, EVIDENCE, DIALOGUE }
     private State state = State.RUNNING;
 
     private Texture jHouse1, pauseBg, resumeTex, quitTex, exitSign;
     private Texture pickupPrompt, evidenceTex1, evidenceTex2, evidenceTex3;
     private ImageButton resumeButton, quitButton;
+
+    private DialogueManager postEvidence1Dialogue;
+    private DialogueManager postEvidence2Dialogue;
+    private DialogueManager finalDialogue1;
+    private DialogueManager activeDialogue = null;
 
     private Rectangle playerBounds, exitHitbox, itemHitbox1, itemHitbox2, itemHitbox3;
     private boolean showExitSign = false;
@@ -36,16 +41,24 @@ public class JHouseScreen implements Screen {
     private boolean item2PickedUp = false;
     private boolean item3PickedUp = false;
     private int evidenceToShow = 0;
-    
+
     private float movementDelayTimer = 0f;
     private final float MAX_DELAY = 0.04f;
-    
+
+    private float evidenceCooldown = 0f;
+
     private float returnX, returnY;
 
     public JHouseScreen(Main game, float x, float y) {
         this.game = game;
         this.returnX = x;
         this.returnY = y;
+    }
+
+    private void startDialogue(DialogueManager dialogue) {
+        activeDialogue = dialogue;
+        activeDialogue.start();
+        state = State.DIALOGUE;
     }
 
     @Override
@@ -55,7 +68,7 @@ public class JHouseScreen implements Screen {
         inventory = new Inventory();
         Gdx.input.setInputProcessor(null);
 
-        jHouse1 = new Texture("j'sroom.png"); 
+        jHouse1 = new Texture("j'sroom.png");
         pauseBg = new Texture("pause_screen.png");
         resumeTex = new Texture("resume_button.png");
         quitTex = new Texture("quitbutton.png");
@@ -65,16 +78,53 @@ public class JHouseScreen implements Screen {
         evidenceTex2 = new Texture("Cecilia 1.png");
         evidenceTex3 = new Texture("Cecilia Uncle 1.png");
 
-        player = new Player(-300, -100);  
+        player = new Player(-300, -100);
         player.setDrawSize(1000, 1000);
-        player.setSpeed(335.0f); 
+        player.setSpeed(335.0f);
 
         playerBounds = new Rectangle();
-
         exitHitbox = new Rectangle(1000, 0, 250, 720);
         itemHitbox1 = new Rectangle(150, 0, 150, 720);
         itemHitbox2 = new Rectangle(475, 0, 150, 720);
         itemHitbox3 = new Rectangle(800, 0, 150, 720);
+
+        // DIALOGUES 1 & 2 — after evidence 1
+        postEvidence1Dialogue = new DialogueManager(
+            new String[] {
+                "JOldhouseDialogue1.png",
+                "JOldhouseDialogue2.png"
+            },
+            new float[] { 0f, 0f },
+            () -> {
+                activeDialogue = null;
+                state = State.RUNNING;
+            }
+        );
+
+        // DIALOGUES 3 & 4 — after evidence 2, then chains into dialogues 5 & 6
+        postEvidence2Dialogue = new DialogueManager(
+            new String[] {
+                "JOldhouseDialogue3.png",
+                "JOldhouseDialogue4.png"
+            },
+            new float[] { 0f, 0f },
+            () -> {
+                startDialogue(finalDialogue1); // chains into dialogues 5 & 6
+            }
+        );
+
+        // DIALOGUES 5 & 6 — after both evidence picked up
+        finalDialogue1 = new DialogueManager(
+            new String[] {
+                "JOldhouseDialogue5.png",
+                "JOldhouseDialogue6.png"
+            },
+            new float[] { 0f, 0f },
+            () -> {
+                activeDialogue = null;
+                state = State.RUNNING;
+            }
+        );
 
         setupPauseMenu();
     }
@@ -108,12 +158,22 @@ public class JHouseScreen implements Screen {
 
     @Override
     public void render(float delta) {
+        if (activeDialogue != null) activeDialogue.update(delta);
+
         if (state == State.EVIDENCE) {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-                state = State.RUNNING;
+            evidenceCooldown += delta;
+            if (evidenceCooldown > 0.2f && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                evidenceCooldown = 0f;
+                if (evidenceToShow == 1) startDialogue(postEvidence1Dialogue);
+                else if (evidenceToShow == 2) {
+                    if (item1PickedUp) startDialogue(postEvidence2Dialogue); // both picked up, chain to final
+                    else startDialogue(postEvidence2Dialogue);
+                }
             }
+        } else if (state == State.DIALOGUE) {
+            // handled internally by DialogueManager
         } else {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            if (state != State.EVIDENCE && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
                 state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
                 Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
             }
@@ -125,18 +185,22 @@ public class JHouseScreen implements Screen {
 
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
-        
+
         batch.draw(jHouse1, 0, 0, 1280, 720);
         player.draw(batch);
 
         if (showExitSign) batch.draw(exitSign, 0, 0, 1280, 720);
         if (showPickupPrompt) batch.draw(pickupPrompt, 0, 0, 1280, 720);
-        if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
+
         if (state == State.EVIDENCE) {
             if (evidenceToShow == 1) batch.draw(evidenceTex1, 0, 0, 1280, 720);
-            if (evidenceToShow == 2) batch.draw(evidenceTex2, 0, 0, 1280, 720);
-            if (evidenceToShow == 3) batch.draw(evidenceTex3, 0, 0, 1280, 720);
+            else if (evidenceToShow == 2) batch.draw(evidenceTex2, 0, 0, 1280, 720);
+            else if (evidenceToShow == 3) batch.draw(evidenceTex3, 0, 0, 1280, 720);
         }
+
+        if (activeDialogue != null) activeDialogue.render(batch);
+
+        if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
 
         batch.end();
 
@@ -166,6 +230,8 @@ public class JHouseScreen implements Screen {
                 Inventory.addItem("Diary Entry 3", "Diary Entry 2.png");
                 item1PickedUp = true;
                 evidenceToShow = 1;
+                evidenceCooldown = 0f;
+                showPickupPrompt = false;
                 state = State.EVIDENCE;
             }
         }
@@ -176,6 +242,8 @@ public class JHouseScreen implements Screen {
                 Inventory.addItem("Cecilia's Letter", "Cecilia 1.png");
                 item2PickedUp = true;
                 evidenceToShow = 2;
+                evidenceCooldown = 0f;
+                showPickupPrompt = false;
                 state = State.EVIDENCE;
             }
         }
@@ -186,6 +254,8 @@ public class JHouseScreen implements Screen {
                 Inventory.addItem("Cecilia's Uncle's Letter", "Cecilia Uncle 1.png");
                 item3PickedUp = true;
                 evidenceToShow = 3;
+                evidenceCooldown = 0f;
+                showPickupPrompt = false;
                 state = State.EVIDENCE;
             }
         }
@@ -206,8 +276,8 @@ public class JHouseScreen implements Screen {
         jHouse1.dispose(); pauseBg.dispose();
         resumeTex.dispose(); quitTex.dispose(); exitSign.dispose();
         pickupPrompt.dispose();
-        evidenceTex1.dispose();
-        evidenceTex2.dispose();
-        evidenceTex3.dispose();
+        evidenceTex1.dispose(); evidenceTex2.dispose(); evidenceTex3.dispose();
+        postEvidence1Dialogue.dispose(); postEvidence2Dialogue.dispose();
+        finalDialogue1.dispose();
     }
 }

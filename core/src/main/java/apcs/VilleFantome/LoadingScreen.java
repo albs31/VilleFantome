@@ -54,11 +54,22 @@ public class LoadingScreen implements Screen {
         saveButton.setPosition(327, 220);
         saveButton.setSize(155, 72);
         saveButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new WarningScreen(game)); // will open last saved instance of game when coded
-            }
-        });
+    @Override
+    public void clicked(InputEvent event, float x, float y) {
+        if (SaveManager.hasSave()) {
+            game.setScreen(new GameScreen(
+                game,
+                true,
+                SaveManager.loadPlayerX(),
+                SaveManager.loadPlayerY(),
+                SaveManager.loadArea()
+            ));
+        } else {
+            // No save exists yet — do nothing, or show a message
+            System.out.println("No save file found.");
+        }
+    }
+});
 
         // lore button
         loreTex = new Texture("lore_button.png");

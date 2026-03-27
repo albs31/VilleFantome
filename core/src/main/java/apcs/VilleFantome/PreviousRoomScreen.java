@@ -35,17 +35,12 @@ public class PreviousRoomScreen implements Screen {
     private DialogueManager postEvidence2Dialogue;
     private DialogueManager postEvidence3Dialogue;
     private DialogueManager postEvidence4Dialogue;
-    private DialogueManager finalDialogue;
     private DialogueManager activeDialogue = null;
 
     private int currentRoom = 1;
     private Rectangle playerBounds, exitHitbox, itemHitbox1, itemHitbox2, itemHitbox3, itemHitbox4;
     private boolean showExitSign = false;
     private boolean showPickupPrompt = false;
-    private boolean item1PickedUp = false;
-    private boolean item2PickedUp = false;
-    private boolean item3PickedUp = false;
-    private boolean item4PickedUp = false;
     private int evidenceToShow = 0;
 
     private float movementDelayTimer = 0f;
@@ -57,6 +52,25 @@ public class PreviousRoomScreen implements Screen {
     private float evidenceCooldown = 0f;
 
     private float returnX, returnY;
+
+    private boolean item1PickedUp = false;
+    private boolean item2PickedUp = false;
+    private boolean item3PickedUp = false;
+    private boolean item4PickedUp = false;
+
+    private static boolean hasVisitedBefore = false;
+    private static boolean item1AlreadyPickedUp = false;
+    private static boolean item2AlreadyPickedUp = false;
+    private static boolean item3AlreadyPickedUp = false;
+    private static boolean item4AlreadyPickedUp = false;
+
+    public static void resetVisit() {
+        hasVisitedBefore = false;
+        item1AlreadyPickedUp = false;
+        item2AlreadyPickedUp = false;
+        item3AlreadyPickedUp = false;
+        item4AlreadyPickedUp = false;
+    }
 
     public PreviousRoomScreen(Main game, float x, float y) {
         this.game = game;
@@ -89,7 +103,7 @@ public class PreviousRoomScreen implements Screen {
         evidenceTex3 = new Texture("scrapped letter 1.png");
         evidenceTex4 = new Texture("Scrapped letter 2.png");
 
-        player = new Player(-300, -100); 
+        player = new Player(-300, -100);
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f);
 
@@ -100,7 +114,19 @@ public class PreviousRoomScreen implements Screen {
         itemHitbox3 = new Rectangle(400, 0, 200, 720);
         itemHitbox4 = new Rectangle(865, 0, 200, 720);
 
-        // DIALOGUE 1 — entry
+        item1PickedUp = item1AlreadyPickedUp;
+        item2PickedUp = item2AlreadyPickedUp;
+        item3PickedUp = item3AlreadyPickedUp;
+        item4PickedUp = item4AlreadyPickedUp;
+
+        // skip dialogue if already visited
+        if (hasVisitedBefore) {
+            state = State.RUNNING;
+        } else {
+            state = State.WAITING;
+        }
+        hasVisitedBefore = true;
+
         entryDialogue = new DialogueManager(
             new String[] { "Theo'sOldRoomDialogue1.png" },
             new float[]  { 0f },
@@ -110,11 +136,8 @@ public class PreviousRoomScreen implements Screen {
             }
         );
 
-        // DIALOGUE 2 — after evidence 1
         postEvidence1Dialogue = new DialogueManager(
-            new String[] { "Theo'sOldRoomDialogue3.png",
-                "Theo'sOldRoomDialogue5.png"
-             },
+            new String[] { "Theo'sOldRoomDialogue3.png", "Theo'sOldRoomDialogue5.png" },
             new float[]  { 0f, 0f },
             () -> {
                 activeDialogue = null;
@@ -122,7 +145,6 @@ public class PreviousRoomScreen implements Screen {
             }
         );
 
-        // DIALOGUE 3 — after evidence 2
         postEvidence2Dialogue = new DialogueManager(
             new String[] { "Theo'sOldRoomDialogue6.png" },
             new float[]  { 0f },
@@ -132,7 +154,6 @@ public class PreviousRoomScreen implements Screen {
             }
         );
 
-        // DIALOGUE 4 — after evidence 3
         postEvidence3Dialogue = new DialogueManager(
             new String[] { "ScrappedLetterDialogue1.png" },
             new float[]  { 0f },
@@ -142,19 +163,14 @@ public class PreviousRoomScreen implements Screen {
             }
         );
 
-        // DIALOGUE 5 — after evidence 4, then immediately triggers dialogue 6
         postEvidence4Dialogue = new DialogueManager(
-            new String[] { "Theo'sOldRoomDialogue2.png",
-                "Theo'sOldRoomDialogue7.png"
-             },
+            new String[] { "Theo'sOldRoomDialogue2.png", "Theo'sOldRoomDialogue7.png" },
             new float[]  { 0f, 0f },
             () -> {
                 activeDialogue = null;
                 state = State.RUNNING;
             }
         );
-
-
 
         setupPauseMenu();
     }
@@ -263,6 +279,7 @@ public class PreviousRoomScreen implements Screen {
                 if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                     Inventory.addItem("J's Letter 1", "J's Letter 1.png");
                     item1PickedUp = true;
+                    item1AlreadyPickedUp = true;
                     evidenceToShow = 1;
                     evidenceCooldown = 0f;
                     showPickupPrompt = false;
@@ -274,6 +291,7 @@ public class PreviousRoomScreen implements Screen {
                 if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                     Inventory.addItem("J's Letter 2", "J's Letter 2.png");
                     item2PickedUp = true;
+                    item2AlreadyPickedUp = true;
                     evidenceToShow = 2;
                     evidenceCooldown = 0f;
                     showPickupPrompt = false;
@@ -295,6 +313,7 @@ public class PreviousRoomScreen implements Screen {
                 if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                     Inventory.addItem("Scrapped Letter 1", "scrapped letter 1.png");
                     item3PickedUp = true;
+                    item3AlreadyPickedUp = true;
                     evidenceToShow = 3;
                     evidenceCooldown = 0f;
                     showPickupPrompt = false;
@@ -306,6 +325,7 @@ public class PreviousRoomScreen implements Screen {
                 if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                     Inventory.addItem("Scrapped Letter 2", "Scrapped letter 2.png");
                     item4PickedUp = true;
+                    item4AlreadyPickedUp = true;
                     evidenceToShow = 4;
                     evidenceCooldown = 0f;
                     showPickupPrompt = false;
@@ -333,6 +353,6 @@ public class PreviousRoomScreen implements Screen {
         evidenceTex3.dispose(); evidenceTex4.dispose();
         entryDialogue.dispose(); postEvidence1Dialogue.dispose();
         postEvidence2Dialogue.dispose(); postEvidence3Dialogue.dispose();
-        postEvidence4Dialogue.dispose(); finalDialogue.dispose();
+        postEvidence4Dialogue.dispose();
     }
 }

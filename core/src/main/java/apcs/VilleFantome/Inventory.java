@@ -11,7 +11,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import java.util.ArrayList;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+
 
 public class Inventory {
     private boolean isOpen = false;

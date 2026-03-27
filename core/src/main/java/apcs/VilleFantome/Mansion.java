@@ -30,17 +30,26 @@ public class Mansion implements Screen {
     private Texture pickupPrompt, evidenceTex1, evidenceTex2;
     private ImageButton resumeButton, quitButton;
 
+    // 1 intro dialogue on entering Room 1
+    private DialogueManager introDialogue;
+
+    // 1 dialogue after Evidence 1
     private DialogueManager postEvidence1Dialogue;
+
+    // 1 dialogue after Evidence 2
     private DialogueManager postEvidence2Dialogue;
+
+    // 2 chained dialogues in Room 3
     private DialogueManager room3Dialogue1;
     private DialogueManager room3Dialogue2;
-    private DialogueManager room3Dialogue3;
+
     private DialogueManager activeDialogue = null;
 
     private Rectangle playerBounds, itemHitbox1, itemHitbox2;
     private boolean showPickupPrompt = false;
     private boolean item1PickedUp = false;
     private boolean item2PickedUp = false;
+    private boolean introDialoguePlayed = false;
     private boolean room3DialoguePlayed = false;
     private int evidenceToShow = 0;
 
@@ -90,11 +99,9 @@ public class Mansion implements Screen {
         itemHitbox1 = new Rectangle(400, 0, 150, 720);
         itemHitbox2 = new Rectangle(400, 0, 150, 720);
 
-        // DIALOGUES 1 & 2 — after evidence 1
-        postEvidence1Dialogue = new DialogueManager(
-            new String[] {
-                "MansionDialogue4.png"
-            },
+        // Dialogue 1 — plays immediately on entering Room 1
+        introDialogue = new DialogueManager(
+            new String[] { "MansionDialogue1.png" },
             new float[] { 0f },
             () -> {
                 activeDialogue = null;
@@ -102,39 +109,51 @@ public class Mansion implements Screen {
             }
         );
 
-        // DIALOGUES 3 & 4 — after evidence 2
-        postEvidence2Dialogue = new DialogueManager(
-            new String[] {
-                "FinalDialogue1.png"
-            },
-            new float[] { 0f, 0f },
+        // Dialogue 2 — plays after picking up Evidence 1
+        postEvidence1Dialogue = new DialogueManager(
+            new String[] { "MansionDialogue4.png" },
+            new float[] { 0f },
             () -> {
                 activeDialogue = null;
                 state = State.RUNNING;
             }
         );
 
-        // DIALOGUE 5 — first of room 3 sequence, chains into dialogue 6
+        // Dialogue 3 — plays after picking up Evidence 2
+        postEvidence2Dialogue = new DialogueManager(
+            new String[] { "FinalDialogue1.png" },
+            new float[] { 0f },
+            () -> {
+                activeDialogue = null;
+                state = State.RUNNING;
+            }
+        );
+
+        // Dialogue 5 — second in Room 3 chain (declared first so Dialogue 4 can reference it)
+        room3Dialogue2 = new DialogueManager(
+    new String[] { "FinalDialogue3.png" },
+    new float[] { 0f },
+    () -> {
+        activeDialogue = null;
+        state = State.RUNNING;  // <-- remove this line
+        game.setScreen(new EndScreen(game));  // <-- add this line
+    }
+);
+
+        // Dialogue 4 — first in Room 3 chain, chains into room3Dialogue2
         room3Dialogue1 = new DialogueManager(
             new String[] { "FinalDialogue2.png" },
             new float[] { 0f },
             () -> {
-                startDialogue(room3Dialogue1);
-            }
-        );
-
-
-        // DIALOGUE 7 — final
-        room3Dialogue3 = new DialogueManager(
-            new String[] { "FinalDialogue3.png" },
-            new float[] { 0f },
-            () -> {
-                activeDialogue = null;
-                state = State.RUNNING;
+                startDialogue(room3Dialogue2);
             }
         );
 
         setupPauseMenu();
+
+        // Trigger the intro dialogue immediately
+        introDialoguePlayed = true;
+        startDialogue(introDialogue);
     }
 
     private void setupPauseMenu() {
@@ -271,7 +290,6 @@ public class Mansion implements Screen {
             if (player.x > 900) {
                 currentRoom = 3;
                 player.x = -250;
-                // trigger room 3 dialogues only once
                 if (!room3DialoguePlayed) {
                     room3DialoguePlayed = true;
                     startDialogue(room3Dialogue1);
@@ -295,11 +313,23 @@ public class Mansion implements Screen {
 
     @Override
     public void dispose() {
-        batch.dispose(); stage.dispose(); inventory.dispose(); player.dispose();
-        mansion3.dispose(); mansion1.dispose(); mansion2.dispose();
-        pauseBg.dispose(); resumeTex.dispose(); quitTex.dispose();
-        pickupPrompt.dispose(); evidenceTex1.dispose(); evidenceTex2.dispose();
-        postEvidence1Dialogue.dispose(); postEvidence2Dialogue.dispose();
-        room3Dialogue1.dispose(); room3Dialogue2.dispose(); room3Dialogue3.dispose();
+        batch.dispose();
+        stage.dispose();
+        inventory.dispose();
+        player.dispose();
+        mansion3.dispose();
+        mansion1.dispose();
+        mansion2.dispose();
+        pauseBg.dispose();
+        resumeTex.dispose();
+        quitTex.dispose();
+        pickupPrompt.dispose();
+        evidenceTex1.dispose();
+        evidenceTex2.dispose();
+        introDialogue.dispose();
+        postEvidence1Dialogue.dispose();
+        postEvidence2Dialogue.dispose();
+        room3Dialogue1.dispose();
+        room3Dialogue2.dispose();
     }
 }

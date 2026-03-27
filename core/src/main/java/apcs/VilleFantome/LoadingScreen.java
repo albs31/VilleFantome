@@ -29,43 +29,55 @@ public class LoadingScreen implements Screen {
     public void show() {
         batch = new SpriteBatch();
         background = new Texture("finalloading.png");
-
         stage = new Stage(new FitViewport(1280, 720));
 
-        // play button 
+        // play button
         playTex = new Texture("play_button.png");
-        ImageButton playButton = new ImageButton(
-            new TextureRegionDrawable(new TextureRegion(playTex))
-        );
+        ImageButton playButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(playTex)));
         playButton.setPosition(327, 305);
         playButton.setSize(155, 72);
         playButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                 Inventory.clearItems();
                 game.setScreen(new WarningScreen(game));
             }
         });
 
         // save button
         saveTex = new Texture("save_button.png");
-        ImageButton saveButton = new ImageButton(
-            new TextureRegionDrawable(new TextureRegion(saveTex))
-        );
+        ImageButton saveButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(saveTex)));
         saveButton.setPosition(327, 220);
         saveButton.setSize(155, 72);
         saveButton.addListener(new ClickListener() {
     @Override
     public void clicked(InputEvent event, float x, float y) {
         if (SaveManager.hasSave()) {
-            game.setScreen(new GameScreen(
-                game,
-                true,
-                SaveManager.loadPlayerX(),
-                SaveManager.loadPlayerY(),
-                SaveManager.loadArea()
-            ));
+            Inventory.clearItems();
+            SaveManager.loadInventory();
+            float savedX = SaveManager.loadPlayerX();
+            float savedY = SaveManager.loadPlayerY();
+            int area = SaveManager.loadArea();
+            String room = SaveManager.loadRoomScreen();
+
+            switch (room) {
+                case "pawnshop":
+                    game.setScreen(new PawnShopScreen(game, savedX, savedY));
+                    break;
+                case "jhouse":
+                    game.setScreen(new JHouseScreen(game, savedX, savedY));
+                    break;
+                case "mansion":
+                    game.setScreen(new Mansion(game, savedX, savedY));
+                    break;
+                case "previousroom":
+                    game.setScreen(new PreviousRoomScreen(game, savedX, savedY));
+                    break;
+                default: // "town"
+                    game.setScreen(new GameScreen(game, true, savedX, savedY, area)); // ← area passed correctly
+                    break;
+            }
         } else {
-            // No save exists yet — do nothing, or show a message
             System.out.println("No save file found.");
         }
     }
@@ -73,15 +85,13 @@ public class LoadingScreen implements Screen {
 
         // lore button
         loreTex = new Texture("lore_button.png");
-        ImageButton loreButton = new ImageButton(
-            new TextureRegionDrawable(new TextureRegion(loreTex))
-        );
+        ImageButton loreButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(loreTex)));
         loreButton.setPosition(327, 126);
         loreButton.setSize(155, 72);
         loreButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new LoreScreen(game)); // opens lore paragraphs
+                game.setScreen(new LoreScreen(game));
             }
         });
 

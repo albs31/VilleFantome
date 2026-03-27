@@ -33,11 +33,10 @@ public class PawnShopScreen implements Screen {
     private Rectangle playerBounds, exitHitbox, itemHitbox;
     private boolean showExitSign = false;
     private boolean showPickupPrompt = false;
-    private boolean itemPickedUp = false;
-    
+
     private float movementDelayTimer = 0f;
     private final float MAX_DELAY = 0.04f;
-    
+
     private float returnX, returnY;
 
     public PawnShopScreen(Main game, float x, float y) {
@@ -62,14 +61,14 @@ public class PawnShopScreen implements Screen {
         pickupPrompt = new Texture("pickupitem.png");
         evidenceTex = new Texture("Diary Entry1.png");
 
-        player = new Player(20, -100); 
-        currentRoom = 1; 
+        player = new Player(20, -100);
+        currentRoom = 1;
         player.setDrawSize(1000, 1000);
-        player.setSpeed(335.0f); 
+        player.setSpeed(335.0f);
 
         playerBounds = new Rectangle();
         exitHitbox = new Rectangle(1000, 0, 280, 720);
-        itemHitbox = new Rectangle(500, 0, 120, 300); // adjust to match item location
+        itemHitbox = new Rectangle(500, 0, 120, 300);
 
         setupPauseMenu();
     }
@@ -92,7 +91,8 @@ public class PawnShopScreen implements Screen {
         quitButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
+                SaveManager.save(returnX, returnY, 1, 7, "pawnshop");
+                game.setScreen(new LoadingScreen(game));
             }
         });
 
@@ -149,24 +149,26 @@ public class PawnShopScreen implements Screen {
         showPickupPrompt = false;
 
         if (currentRoom == 1) {
-            if (!itemPickedUp && playerBounds.overlaps(itemHitbox)) {
+            if (!Inventory.hasItem("Diary Entry 1") && playerBounds.overlaps(itemHitbox)) {
                 showPickupPrompt = true;
                 if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                     Inventory.addItem("Diary Entry 1", "Diary Entry1.png");
-                    itemPickedUp = true;
                     state = State.EVIDENCE;
                 }
             }
 
-            if (player.x < -300) player.x = -300; 
-            if (player.x >= 1100) { 
+            if (player.x < -300) player.x = -300;
+            if (player.x >= 1100) {
                 currentRoom = 2;
-                player.x = -270;    
+                player.x = -270;
             }
         } else if (currentRoom == 2) {
             if (playerBounds.overlaps(exitHitbox)) showExitSign = true;
             if (player.x <= -275) { currentRoom = 1; player.x = 850; }
-            if (player.x > 900) game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
+
+            if (player.x > 900) {
+    game.setScreen(new GameScreen(game, true, 460, 20, 1)); // ← y=20 matches new game spawn height
+}
         }
     }
 

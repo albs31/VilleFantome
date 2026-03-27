@@ -93,11 +93,12 @@ public class Mansion implements Screen {
         quitButton.setPosition(500, 200);
         quitButton.setSize(300, 120);
         quitButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new GameScreen(game, true, returnX, returnY, 2));
-            }
-        });
+    @Override
+    public void clicked(InputEvent event, float x, float y) {
+        SaveManager.save(player.x, player.y, 2, 7, "mansion");
+game.setScreen(new LoadingScreen(game));
+    }
+});
 
         stage.addActor(resumeButton);
         stage.addActor(quitButton);

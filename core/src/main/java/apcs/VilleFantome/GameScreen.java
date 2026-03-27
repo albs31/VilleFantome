@@ -128,7 +128,7 @@ public class GameScreen implements Screen {
         quitButton.addListener(new ClickListener() {
     @Override
     public void clicked(InputEvent event, float x, float y) {
-        SaveManager.save(player.x, player.y, currentArea, currentDialogueIndex);
+        SaveManager.save(player.x, player.y, currentArea, currentDialogueIndex, "town");
         game.setScreen(new LoadingScreen(game));
     }
 });

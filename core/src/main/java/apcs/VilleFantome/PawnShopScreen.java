@@ -25,7 +25,7 @@ public class PawnShopScreen implements Screen {
     private DialogueManager activeDialogue = null;
 
     private enum State { WAITING, RUNNING, PAUSED, EVIDENCE, DIALOGUE }
-    private State state = State.WAITING;
+    private State state = State.RUNNING;
 
     private Texture pawnShop1, pawnShop2, pauseBg, resumeTex, quitTex, exitSign;
     private Texture pickupPrompt, evidenceTex1, evidenceTex2;
@@ -48,6 +48,17 @@ public class PawnShopScreen implements Screen {
     private float evidenceCooldown = 0f;
 
     private float returnX, returnY;
+
+    // Static variables — survive screen transitions
+    private static boolean hasVisitedBefore = false;
+    private static boolean item1AlreadyPickedUp = false;
+    private static boolean item2AlreadyPickedUp = false;
+
+    public static void resetVisit() {
+        hasVisitedBefore = false;
+        item1AlreadyPickedUp = false;
+        item2AlreadyPickedUp = false;
+    }
 
     public PawnShopScreen(Main game, float x, float y) {
         this.game = game;
@@ -78,14 +89,14 @@ public class PawnShopScreen implements Screen {
         evidenceTex1 = new Texture("Evidence_In_Pawn_Shop.png");
         evidenceTex2 = new Texture("Diary Entry1.png");
 
-        player = new Player(20, -100);
+        player = new Player(-200, -100);
         currentRoom = 1;
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f);
 
         playerBounds = new Rectangle();
         exitHitbox = new Rectangle(1000, 0, 280, 720);
-        itemHitbox1 = new Rectangle(500, 0, 120, 300);
+        itemHitbox1 = new Rectangle(600, 0, 120, 300);
         itemHitbox2 = new Rectangle(800, 0, 120, 300);
 
         entryDialogue = new DialogueManager(
@@ -115,7 +126,18 @@ public class PawnShopScreen implements Screen {
             }
         );
 
-        state = State.WAITING;
+        // Restore pickup state from previous visit
+        item1PickedUp = item1AlreadyPickedUp;
+        item2PickedUp = item2AlreadyPickedUp;
+
+        // Skip entry dialogue if already visited
+        if (hasVisitedBefore) {
+            state = State.RUNNING;
+        } else {
+            state = State.WAITING;
+        }
+
+        hasVisitedBefore = true;
 
         setupPauseMenu();
     }
@@ -159,13 +181,13 @@ public class PawnShopScreen implements Screen {
             }
         } else if (state == State.EVIDENCE) {
             evidenceCooldown += delta;
-            if (evidenceCooldown > 0.2f && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+            if (evidenceCooldown > 0.1f && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                 evidenceCooldown = 0f;
                 if (evidenceToShow == 1) startDialogue(postEvidenceDialogue);
                 if (evidenceToShow == 2) startDialogue(postEvidence2Dialogue);
             }
         } else if (state == State.DIALOGUE) {
-            // handled internally by DialogueManager, callback sets state to RUNNING
+            // handled internally by DialogueManager
         } else {
             if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
                 state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
@@ -192,7 +214,6 @@ public class PawnShopScreen implements Screen {
         }
 
         if (activeDialogue != null) activeDialogue.render(batch);
-
         if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
 
         batch.end();
@@ -221,9 +242,10 @@ public class PawnShopScreen implements Screen {
                 if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                     Inventory.addItem("Pocketwatch", "Evidence_In_Pawn_Shop.png");
                     item1PickedUp = true;
+                    item1AlreadyPickedUp = true;
                     evidenceToShow = 1;
                     evidenceCooldown = 0f;
-                    showPickupPrompt = false; 
+                    showPickupPrompt = false;
                     state = State.EVIDENCE;
                 }
             }
@@ -240,9 +262,10 @@ public class PawnShopScreen implements Screen {
                 if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                     Inventory.addItem("Diary Entry 2", "Diary Entry1.png");
                     item2PickedUp = true;
+                    item2AlreadyPickedUp = true;
                     evidenceToShow = 2;
                     evidenceCooldown = 0f;
-                    showPickupPrompt = false; 
+                    showPickupPrompt = false;
                     state = State.EVIDENCE;
                 }
             }

@@ -31,7 +31,8 @@ public class JHouseScreen implements Screen {
 
     private DialogueManager postEvidence1Dialogue;
     private DialogueManager postEvidence2Dialogue;
-    private DialogueManager finalDialogue1;
+    private DialogueManager postEvidence3Dialogue;
+    private DialogueManager finalDialogue;
     private DialogueManager activeDialogue = null;
 
     private Rectangle playerBounds, exitHitbox, itemHitbox1, itemHitbox2, itemHitbox3;
@@ -75,8 +76,8 @@ public class JHouseScreen implements Screen {
         exitSign = new Texture("exitsign.png");
         pickupPrompt = new Texture("pickupitem.png");
         evidenceTex1 = new Texture("Diary Entry 2.png");
-        evidenceTex2 = new Texture("Cecilia 1.png");
-        evidenceTex3 = new Texture("Cecilia Uncle 1.png");
+        evidenceTex2 = new Texture("Cecilia Uncle 1.png");
+        evidenceTex3 = new Texture("Cecilia 1.png");
 
         player = new Player(-300, -100);
         player.setDrawSize(1000, 1000);
@@ -101,25 +102,32 @@ public class JHouseScreen implements Screen {
             }
         );
 
-        // DIALOGUES 3 & 4 — after evidence 2, then chains into dialogues 5 & 6
+        // DIALOGUES 3 & 4 — after evidence 2
         postEvidence2Dialogue = new DialogueManager(
             new String[] {
                 "JOldhouseDialogue3.png",
-                "JOldhouseDialogue4.png"
+                
             },
             new float[] { 0f, 0f },
             () -> {
-                startDialogue(finalDialogue1); // chains into dialogues 5 & 6
+                activeDialogue = null;
+                state = State.RUNNING;
             }
         );
 
-        // DIALOGUES 5 & 6 — after both evidence picked up
-        finalDialogue1 = new DialogueManager(
-            new String[] {
-                "JOldhouseDialogue5.png",
-                "JOldhouseDialogue6.png"
-            },
+        // DIALOGUE 5 — after evidence 3, chains into dialogue 6
+        postEvidence3Dialogue = new DialogueManager(
+            new String[] { "JOldhouseDialogue4.png", "JOldhouseDialogue5.png" },
             new float[] { 0f, 0f },
+            () -> {
+                startDialogue(finalDialogue); // chains straight into dialogue 6
+            }
+        );
+
+        // DIALOGUE 6 — plays right after dialogue 5
+        finalDialogue = new DialogueManager(
+            new String[] { "JOldhouseDialogue6.png" },
+            new float[] { 0f },
             () -> {
                 activeDialogue = null;
                 state = State.RUNNING;
@@ -165,10 +173,8 @@ public class JHouseScreen implements Screen {
             if (evidenceCooldown > 0.2f && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                 evidenceCooldown = 0f;
                 if (evidenceToShow == 1) startDialogue(postEvidence1Dialogue);
-                else if (evidenceToShow == 2) {
-                    if (item1PickedUp) startDialogue(postEvidence2Dialogue); // both picked up, chain to final
-                    else startDialogue(postEvidence2Dialogue);
-                }
+                else if (evidenceToShow == 2) startDialogue(postEvidence2Dialogue);
+                else if (evidenceToShow == 3) startDialogue(postEvidence3Dialogue);
             }
         } else if (state == State.DIALOGUE) {
             // handled internally by DialogueManager
@@ -227,7 +233,7 @@ public class JHouseScreen implements Screen {
         if (!item1PickedUp && playerBounds.overlaps(itemHitbox1)) {
             showPickupPrompt = true;
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-                Inventory.addItem("Diary Entry 3", "Diary Entry 2.png");
+                Inventory.addItem("Cecilia's Letter", "Cecilia 1.png");
                 item1PickedUp = true;
                 evidenceToShow = 1;
                 evidenceCooldown = 0f;
@@ -239,7 +245,7 @@ public class JHouseScreen implements Screen {
         if (!item2PickedUp && playerBounds.overlaps(itemHitbox2)) {
             showPickupPrompt = true;
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-                Inventory.addItem("Cecilia's Letter", "Cecilia 1.png");
+                Inventory.addItem("Diary Entry 3", "Diary Entry 2.png");
                 item2PickedUp = true;
                 evidenceToShow = 2;
                 evidenceCooldown = 0f;
@@ -278,6 +284,6 @@ public class JHouseScreen implements Screen {
         pickupPrompt.dispose();
         evidenceTex1.dispose(); evidenceTex2.dispose(); evidenceTex3.dispose();
         postEvidence1Dialogue.dispose(); postEvidence2Dialogue.dispose();
-        finalDialogue1.dispose();
+        postEvidence3Dialogue.dispose(); finalDialogue.dispose();
     }
 }

@@ -6,7 +6,12 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
 public class EndScreen implements Screen {
@@ -15,19 +20,19 @@ public class EndScreen implements Screen {
     private SpriteBatch batch;
     private Stage stage;
 
-    private Texture endScreen1;  // End_Screen (1).png  — flashes briefly
-    private Texture endScreen2;  // End_Screen.png      — holds for a moment
-    private Texture credits;     // creditscene.png     — fades in last
+    private Texture endScreen1, endScreen2, credits;
+    private Texture pauseBg, resumeTex, quitTex; // Pause assets
+    private ImageButton resumeButton, quitButton;
+
+    private enum State { RUNNING, PAUSED }
+    private State state = State.RUNNING;
 
     private float slideTimer = 0f;
+    private static final float FLASH_DURATION = 0.6f;
+    private static final float HOLD_DURATION  = 6.0f;
+    private static final float FADE_DURATION  = 1.8f;
 
-    private static final float FLASH_DURATION = 0.4f; // was 0.12f, try 0.4–0.8f to taste // how long End_Screen (1) flashes (seconds)
-    private static final float HOLD_DURATION  = 6.0f;  // how long End_Screen.png holds
-    private static final float FADE_DURATION  = 1.8f;  // how long the crossfade to credits takes
-
-    // 0 = flash,  1 = hold,  2 = crossfading to credits,  3 = credits fully visible
     private int currentSlide = 0;
-
     private boolean keyHeld = false;
 
     public EndScreen(Main game) {
@@ -42,34 +47,73 @@ public class EndScreen implements Screen {
         endScreen1 = new Texture("End_Screen (1).png");
         endScreen2 = new Texture("End_Screen.png");
         credits    = new Texture("creditscene.png");
+        
+        // Load Pause Textures
+        pauseBg    = new Texture("pause_screen.png");
+        resumeTex  = new Texture("resume_button.png");
+        quitTex    = new Texture("quitbutton.png");
+
+        setupPauseMenu();
 
         currentSlide = 0;
         slideTimer   = 0f;
         keyHeld      = false;
-
+        state        = State.RUNNING;
+        
+        // Ensure input processor is null initially unless paused
         Gdx.input.setInputProcessor(null);
+    }
+
+    private void setupPauseMenu() {
+        resumeButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(resumeTex)));
+        resumeButton.setPosition(500, 300);
+        resumeButton.setSize(300, 120);
+        resumeButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                state = State.RUNNING;
+                Gdx.input.setInputProcessor(null);
+            }
+        });
+
+        quitButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(quitTex)));
+        quitButton.setPosition(500, 200);
+        quitButton.setSize(300, 120);
+        quitButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.setScreen(new LoadingScreen(game));
+            }
+        });
+
+        stage.addActor(resumeButton);
+        stage.addActor(quitButton);
     }
 
     @Override
     public void render(float delta) {
-        slideTimer += delta;
-
-        // Slide 0: flash — very brief, auto-advance
-        if (currentSlide == 0 && slideTimer >= FLASH_DURATION) {
-            currentSlide = 1;
-            slideTimer = 0f;
+        // Toggle Pause Logic
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
+            Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
         }
 
-        // Slide 1: hold End_Screen.png, then start crossfade
-        if (currentSlide == 1 && slideTimer >= HOLD_DURATION) {
-            currentSlide = 2;
-            slideTimer = 0f;
-        }
+        // Only update timers if running
+        if (state == State.RUNNING) {
+            slideTimer += delta;
 
-        // Slide 2: crossfade End_Screen.png → credits
-        if (currentSlide == 2 && slideTimer >= FADE_DURATION) {
-            currentSlide = 3;
-            slideTimer = 0f;
+            if (currentSlide == 0 && slideTimer >= FLASH_DURATION) {
+                currentSlide = 1;
+                slideTimer = 0f;
+            }
+            if (currentSlide == 1 && slideTimer >= HOLD_DURATION) {
+                currentSlide = 2;
+                slideTimer = 0f;
+            }
+            if (currentSlide == 2 && slideTimer >= FADE_DURATION) {
+                currentSlide = 3;
+                slideTimer = 0f;
+            }
         }
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
@@ -78,36 +122,35 @@ public class EndScreen implements Screen {
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
 
+        // Rendering Slides
         if (currentSlide == 0) {
-            // Flash: full opacity
             batch.setColor(1, 1, 1, 1);
             batch.draw(endScreen1, 0, 0, 1280, 720);
-
         } else if (currentSlide == 1) {
-            // Hold: full opacity
             batch.setColor(1, 1, 1, 1);
             batch.draw(endScreen2, 0, 0, 1280, 720);
-
         } else if (currentSlide == 2) {
-            // Crossfade: endScreen2 fades out, credits fade in simultaneously
-            float progress = slideTimer / FADE_DURATION; // 0.0 → 1.0
+            float progress = slideTimer / FADE_DURATION;
             batch.setColor(1, 1, 1, 1f - progress);
             batch.draw(endScreen2, 0, 0, 1280, 720);
             batch.setColor(1, 1, 1, progress);
             batch.draw(credits, 0, 0, 1280, 720);
-
         } else {
-            // Slide 3: credits fully visible, wait for key press
             batch.setColor(1, 1, 1, 1);
             batch.draw(credits, 0, 0, 1280, 720);
         }
 
-        // Always reset batch color before ending
+        // Draw Pause Background if paused
+        if (state == State.PAUSED) {
+            batch.setColor(1, 1, 1, 1);
+            batch.draw(pauseBg, 0, 0, 1280, 720);
+        }
+
         batch.setColor(1, 1, 1, 1);
         batch.end();
 
-        // Only listen for input on the credits slide
-        if (currentSlide == 3) {
+        // Credit Screen Input
+        if (state == State.RUNNING && currentSlide == 3) {
             boolean pressing = Gdx.input.isKeyPressed(Input.Keys.E)
                             || Gdx.input.isKeyPressed(Input.Keys.ENTER)
                             || Gdx.input.isKeyPressed(Input.Keys.SPACE);
@@ -116,6 +159,12 @@ public class EndScreen implements Screen {
                 game.setScreen(new LoadingScreen(game));
             }
             if (!pressing) keyHeld = false;
+        }
+
+        // Draw Buttons
+        if (state == State.PAUSED) {
+            stage.act(delta);
+            stage.draw();
         }
     }
 
@@ -131,5 +180,8 @@ public class EndScreen implements Screen {
         endScreen1.dispose();
         endScreen2.dispose();
         credits.dispose();
+        pauseBg.dispose();
+        resumeTex.dispose();
+        quitTex.dispose();
     }
 }

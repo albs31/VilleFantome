@@ -301,11 +301,16 @@ public class Mansion implements Screen {
             }
 
         } else if (currentRoom == 3) {
-            // Hard left wall — player cannot leave room 3 to the left
-            if (player.x < -240) player.x = -240;
+            // This prevents the player from moving far enough left to trigger 
+            // the room 2 transition (which usually happens at x < -400)
+            if (player.x < -240) {
+                player.x = -240;
+            }
 
             // Hard right wall
-            if (player.x > 900) player.x = 900;
+            if (player.x > 900) {
+                player.x = 900;
+            }
         }
     }
 

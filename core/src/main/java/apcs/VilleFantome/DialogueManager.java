@@ -33,7 +33,7 @@ public class DialogueManager {
         this.callback = callback;
     }
 
-    /** Starts or restarts this dialogue sequence from the beginning */
+    // starts or restarts this dialogue sequence from the beginning 
     public void start() {
         currentIndex = 0;
         timer = 0f;
@@ -41,18 +41,24 @@ public class DialogueManager {
         waitingForInput = durations[0] == 0f;
     }
 
-    /** True while dialogue is showing — use to block player movement */
+    // true while dialogue is showing, use to block player movement
     public boolean isActive() {
         return active;
     }
 
-    /** Call every frame in updateGame() */
     public void update(float delta) {
         if (!active) return;
 
         if (waitingForInput) {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.E) || Gdx.input.justTouched()) {
+            // Advance forward
+            if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) || 
+                Gdx.input.isKeyJustPressed(Input.Keys.E) || 
+                Gdx.input.justTouched()) {
                 advance();
+            }
+            // Go back
+            if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
+                goBack();
             }
         } else {
             timer += delta;
@@ -73,7 +79,15 @@ public class DialogueManager {
         }
     }
 
-    /** Call inside batch.begin() / batch.end() block — renders on top of everything */
+    private void goBack() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            timer = 0f;
+            waitingForInput = durations[currentIndex] == 0f;
+        }
+    }
+
+    // call inside of batch.begin() and batch.end() block, renders on top of everything 
     public void render(SpriteBatch batch) {
         if (!active) return;
         batch.draw(pages[currentIndex], 0, 0, 1280, 720);

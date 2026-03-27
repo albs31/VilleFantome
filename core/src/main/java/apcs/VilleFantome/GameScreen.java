@@ -43,7 +43,7 @@ public class GameScreen implements Screen {
     private float fadeAlpha = 1.0f;
     private float fadeSpeed = 3.5f;
 
-    private Rectangle door1Bounds, door2Bounds, playerBounds; 
+    private Rectangle door1Bounds, door2Bounds, player3Bounds, playerBounds; 
     private boolean showEnterSign = false;
 
     private float movementDelayTimer = 0.0f;
@@ -100,6 +100,7 @@ public class GameScreen implements Screen {
         // Initialize Door Hitboxes
         door1Bounds = new Rectangle(930, 10, 10, 180); 
         door2Bounds = new Rectangle(1230, 10, 10, 180); // Leads to Previous Room
+        player3Bounds = new Rectangle(390, 20, 80, 180);
         playerBounds = new Rectangle();
 
         setupPauseMenu();
@@ -229,7 +230,18 @@ public class GameScreen implements Screen {
                     if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
                         game.setScreen(new PreviousRoomScreen(game, player.x, player.y));
                     }
+               if (currentArea == 2) {
+                if (playerBounds.overlaps(player3Bounds)) {
+                    showEnterSign = true;
                 }
+
+                if (showEnterSign && Gdx.input.isKeyJustPressed(Input.Keys.F)) {
+                    game.setScreen(new JHouseScreen(game, player.x, player.y));
+                }
+            }
+        }
+    }
+        }
             }
         }
     }

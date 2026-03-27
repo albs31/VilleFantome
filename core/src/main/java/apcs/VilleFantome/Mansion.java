@@ -22,7 +22,7 @@ public class Mansion implements Screen {
     private Player player;
     private Inventory inventory;
 
-    private enum State { RUNNING, PAUSED, EVIDENCE, DIALOGUE }
+    private enum State { RUNNING, PAUSED, EVIDENCE, DIALOGUE, ENDING }
     private State state = State.RUNNING;
 
     private Texture mansion3, mansion1, mansion2;
@@ -30,19 +30,12 @@ public class Mansion implements Screen {
     private Texture pickupPrompt, evidenceTex1, evidenceTex2;
     private ImageButton resumeButton, quitButton;
 
-    // 1 intro dialogue on entering Room 1
+    // Dialogues
     private DialogueManager introDialogue;
-
-    // 1 dialogue after Evidence 1
     private DialogueManager postEvidence1Dialogue;
-
-    // 1 dialogue after Evidence 2
     private DialogueManager postEvidence2Dialogue;
-
-    // 2 chained dialogues in Room 3
     private DialogueManager room3Dialogue1;
     private DialogueManager room3Dialogue2;
-
     private DialogueManager activeDialogue = null;
 
     private Rectangle playerBounds, itemHitbox1, itemHitbox2;
@@ -62,6 +55,9 @@ public class Mansion implements Screen {
 
     private int currentRoom = 1;
 
+    // Ending sequence
+    private static final float WALK_TARGET_X = 300f; // tweak to centre of room 3
+
     public Mansion(Main game, float x, float y) {
         this.game = game;
         this.returnX = x;
@@ -76,17 +72,17 @@ public class Mansion implements Screen {
 
     @Override
     public void show() {
-        batch = new SpriteBatch();
-        stage = new Stage(new FitViewport(1280, 720));
+        batch     = new SpriteBatch();
+        stage     = new Stage(new FitViewport(1280, 720));
         inventory = new Inventory();
         Gdx.input.setInputProcessor(null);
 
-        mansion3 = new Texture("Mansion 3.png");
-        mansion1 = new Texture("Mansion 1.png");
-        mansion2 = new Texture("Mansion 2.png");
-        pauseBg = new Texture("pause_screen.png");
-        resumeTex = new Texture("resume_button.png");
-        quitTex = new Texture("quitbutton.png");
+        mansion3     = new Texture("Mansion 3.png");
+        mansion1     = new Texture("Mansion 1.png");
+        mansion2     = new Texture("Mansion 2.png");
+        pauseBg      = new Texture("pause_screen.png");
+        resumeTex    = new Texture("resume_button.png");
+        quitTex      = new Texture("quitbutton.png");
         pickupPrompt = new Texture("pickupitem.png");
         evidenceTex1 = new Texture("Diary Entry 3.png");
         evidenceTex2 = new Texture("FinalDiaryEntry.png");
@@ -96,13 +92,13 @@ public class Mansion implements Screen {
         player.setSpeed(335.0f);
 
         playerBounds = new Rectangle();
-        itemHitbox1 = new Rectangle(400, 0, 150, 720);
-        itemHitbox2 = new Rectangle(400, 0, 150, 720);
+        itemHitbox1  = new Rectangle(400, 0, 150, 720);
+        itemHitbox2  = new Rectangle(400, 0, 150, 720);
 
         // Dialogue 1 — plays immediately on entering Room 1
         introDialogue = new DialogueManager(
             new String[] { "MansionDialogue1.png" },
-            new float[] { 0f },
+            new float[]  { 0f },
             () -> {
                 activeDialogue = null;
                 state = State.RUNNING;
@@ -112,7 +108,7 @@ public class Mansion implements Screen {
         // Dialogue 2 — plays after picking up Evidence 1
         postEvidence1Dialogue = new DialogueManager(
             new String[] { "MansionDialogue4.png" },
-            new float[] { 0f },
+            new float[]  { 0f },
             () -> {
                 activeDialogue = null;
                 state = State.RUNNING;
@@ -122,31 +118,29 @@ public class Mansion implements Screen {
         // Dialogue 3 — plays after picking up Evidence 2
         postEvidence2Dialogue = new DialogueManager(
             new String[] { "FinalDialogue1.png" },
-            new float[] { 0f },
+            new float[]  { 0f },
             () -> {
                 activeDialogue = null;
                 state = State.RUNNING;
             }
         );
 
-        // Dialogue 5 — second in Room 3 chain (declared first so Dialogue 4 can reference it)
+        // Dialogue 5 — second in Room 3 chain (declared first so room3Dialogue1 can reference it)
+        // When finished, player walks to middle then EndScreen launches
         room3Dialogue2 = new DialogueManager(
-    new String[] { "FinalDialogue3.png" },
-    new float[] { 0f },
-    () -> {
-        activeDialogue = null;
-        state = State.RUNNING;  // <-- remove this line
-        game.setScreen(new EndScreen(game));  // <-- add this line
-    }
-);
+            new String[] { "FinalDialogue3.png" },
+            new float[]  { 0f },
+            () -> {
+                activeDialogue = null;
+                state = State.ENDING;
+            }
+        );
 
         // Dialogue 4 — first in Room 3 chain, chains into room3Dialogue2
         room3Dialogue1 = new DialogueManager(
             new String[] { "FinalDialogue2.png" },
-            new float[] { 0f },
-            () -> {
-                startDialogue(room3Dialogue2);
-            }
+            new float[]  { 0f },
+            () -> startDialogue(room3Dialogue2)
         );
 
         setupPauseMenu();
@@ -191,13 +185,15 @@ public class Mansion implements Screen {
             evidenceCooldown += delta;
             if (evidenceCooldown > 0.2f && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                 evidenceCooldown = 0f;
-                if (evidenceToShow == 1) startDialogue(postEvidence1Dialogue);
+                if      (evidenceToShow == 1) startDialogue(postEvidence1Dialogue);
                 else if (evidenceToShow == 2) startDialogue(postEvidence2Dialogue);
             }
         } else if (state == State.DIALOGUE) {
             // handled internally by DialogueManager
+        } else if (state == State.ENDING) {
+            updateGame(delta);
         } else {
-            if (state != State.EVIDENCE && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
                 state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
                 Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
             }
@@ -210,16 +206,16 @@ public class Mansion implements Screen {
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
 
-        if (currentRoom == 1) batch.draw(mansion3, 0, 0, 1280, 720);
+        if      (currentRoom == 1) batch.draw(mansion3, 0, 0, 1280, 720);
         else if (currentRoom == 2) batch.draw(mansion1, 0, 0, 1280, 720);
-        else batch.draw(mansion2, 0, 0, 1280, 720);
+        else                       batch.draw(mansion2, 0, 0, 1280, 720);
 
         player.draw(batch);
 
         if (showPickupPrompt) batch.draw(pickupPrompt, 0, 0, 1280, 720);
 
         if (state == State.EVIDENCE) {
-            if (evidenceToShow == 1) batch.draw(evidenceTex1, 0, 0, 1280, 720);
+            if      (evidenceToShow == 1) batch.draw(evidenceTex1, 0, 0, 1280, 720);
             else if (evidenceToShow == 2) batch.draw(evidenceTex2, 0, 0, 1280, 720);
         }
 
@@ -243,8 +239,16 @@ public class Mansion implements Screen {
 
         player.update(delta);
         playerBounds.set(player.x + 170, player.y + 40, 140, 260);
-
         showPickupPrompt = false;
+
+        // ENDING: let player walk right until they reach the target, then launch EndScreen
+        if (state == State.ENDING) {
+            if (player.x >= WALK_TARGET_X) {
+                player.x = WALK_TARGET_X;
+                game.setScreen(new EndScreen(game));
+            }
+            return;
+        }
 
         if (currentRoom == 1) {
             if (player.x < -435) {
@@ -256,8 +260,8 @@ public class Mansion implements Screen {
                 showPickupPrompt = true;
                 if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                     Inventory.addItem("Diary Entry 3", "Diary Entry 3.png");
-                    item1PickedUp = true;
-                    evidenceToShow = 1;
+                    item1PickedUp    = true;
+                    evidenceToShow   = 1;
                     evidenceCooldown = 0f;
                     showPickupPrompt = false;
                     state = State.EVIDENCE;
@@ -279,8 +283,8 @@ public class Mansion implements Screen {
                 showPickupPrompt = true;
                 if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                     Inventory.addItem("Final Diary Entry", "FinalDiaryEntry.png");
-                    item2PickedUp = true;
-                    evidenceToShow = 2;
+                    item2PickedUp    = true;
+                    evidenceToShow   = 2;
                     evidenceCooldown = 0f;
                     showPickupPrompt = false;
                     state = State.EVIDENCE;
@@ -301,14 +305,13 @@ public class Mansion implements Screen {
                 currentRoom = 2;
                 player.x = 850;
             }
-
             if (player.x > 900) player.x = 900;
         }
     }
 
     @Override public void resize(int w, int h) { stage.getViewport().update(w, h, true); }
-    @Override public void hide() { Gdx.input.setInputProcessor(null); }
-    @Override public void pause() {}
+    @Override public void hide()   { Gdx.input.setInputProcessor(null); }
+    @Override public void pause()  {}
     @Override public void resume() {}
 
     @Override

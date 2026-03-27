@@ -211,7 +211,6 @@ public class GameScreen implements Screen {
                 currentArea = 1; 
                 player.x = 1200;
             }
-        }
 
             showEnterSign = false;
 
@@ -226,19 +225,18 @@ public class GameScreen implements Screen {
                     if (Gdx.input.isKeyJustPressed(Input.Keys.F)) 
                         game.setScreen(new PreviousRoomScreen(game, player.x, player.y));
                 }
-            } 
-            else if (currentArea == 2) {
+            } else if (currentArea == 2) {
                 if (playerBounds.overlaps(player3Bounds)) {
                     showEnterSign = true;
                     if (Gdx.input.isKeyJustPressed(Input.Keys.F)) 
                         game.setScreen(new JHouseScreen(game, player.x, player.y));
                 }
-                {
-                  if (playerBounds.overlaps(player4Bounds)) {
+                if (playerBounds.overlaps(player4Bounds)) {
                     showEnterSign = true;
                     if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
                         game.setScreen(new Mansion(game, player.x, player.y));
                     }
+                }
             }
         }
     }

@@ -22,14 +22,20 @@ public class JHouseScreen implements Screen {
     private Player player;
     private Inventory inventory;
 
-    private enum State { RUNNING, PAUSED }
+    private enum State { RUNNING, PAUSED, EVIDENCE }
     private State state = State.RUNNING;
 
     private Texture jHouse1, pauseBg, resumeTex, quitTex, exitSign;
+    private Texture pickupPrompt, evidenceTex1, evidenceTex2, evidenceTex3;
     private ImageButton resumeButton, quitButton;
 
-    private Rectangle playerBounds, exitHitbox;
+    private Rectangle playerBounds, exitHitbox, itemHitbox1, itemHitbox2, itemHitbox3;
     private boolean showExitSign = false;
+    private boolean showPickupPrompt = false;
+    private boolean item1PickedUp = false;
+    private boolean item2PickedUp = false;
+    private boolean item3PickedUp = false;
+    private int evidenceToShow = 0;
     
     private float movementDelayTimer = 0f;
     private final float MAX_DELAY = 0.04f;
@@ -54,13 +60,22 @@ public class JHouseScreen implements Screen {
         resumeTex = new Texture("resume_button.png");
         quitTex = new Texture("quitbutton.png");
         exitSign = new Texture("exitsign.png");
+        pickupPrompt = new Texture("pickupitem.png");
+        evidenceTex1 = new Texture("Diary Entry 2.png");
+        evidenceTex2 = new Texture("Cecilia 1.png");
+        evidenceTex3 = new Texture("Cecilia Uncle 1.png");
 
-        player = new Player(20, -100); 
+        player = new Player(-300, -100); 
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f); 
 
         playerBounds = new Rectangle();
-        exitHitbox = new Rectangle(1000, 0, 280, 720); 
+        exitHitbox = new Rectangle(1000, 0, 280, 720);
+
+        // Adjust these x values to match where items appear in j'sroom.png
+        itemHitbox1 = new Rectangle(200, 0, 150, 720);
+        itemHitbox2 = new Rectangle(500, 0, 150, 720);
+        itemHitbox3 = new Rectangle(750, 0, 150, 720);
 
         setupPauseMenu();
     }
@@ -81,12 +96,12 @@ public class JHouseScreen implements Screen {
         quitButton.setPosition(500, 200);
         quitButton.setSize(300, 120);
         quitButton.addListener(new ClickListener() {
-    @Override
-    public void clicked(InputEvent event, float x, float y) {
-        SaveManager.save(player.x, player.y, 2, 7, "jhouse");
-game.setScreen(new LoadingScreen(game));
-    }
-});
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                SaveManager.save(player.x, player.y, 2, 7, "jhouse");
+                game.setScreen(new LoadingScreen(game));
+            }
+        });
 
         stage.addActor(resumeButton);
         stage.addActor(quitButton);
@@ -94,12 +109,17 @@ game.setScreen(new LoadingScreen(game));
 
     @Override
     public void render(float delta) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
-            Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
+        if (state == State.EVIDENCE) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                state = State.RUNNING;
+            }
+        } else {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+                state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
+                Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
+            }
+            if (state == State.RUNNING) updateGame(delta);
         }
-
-        if (state == State.RUNNING) updateGame(delta);
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -110,11 +130,15 @@ game.setScreen(new LoadingScreen(game));
         batch.draw(jHouse1, 0, 0, 1280, 720);
         player.draw(batch);
 
-        if (showExitSign) {
-            batch.draw(exitSign, 0, 0, 1280, 720); 
+        if (showExitSign) batch.draw(exitSign, 0, 0, 1280, 720);
+        if (showPickupPrompt) batch.draw(pickupPrompt, 0, 0, 1280, 720);
+        if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
+        if (state == State.EVIDENCE) {
+            if (evidenceToShow == 1) batch.draw(evidenceTex1, 0, 0, 1280, 720);
+            if (evidenceToShow == 2) batch.draw(evidenceTex2, 0, 0, 1280, 720);
+            if (evidenceToShow == 3) batch.draw(evidenceTex3, 0, 0, 1280, 720);
         }
 
-        if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
         batch.end();
 
         inventory.handleInput();
@@ -133,15 +157,43 @@ game.setScreen(new LoadingScreen(game));
         playerBounds.set(player.x + 170, player.y + 40, 140, 260);
 
         showExitSign = false;
+        showPickupPrompt = false;
 
-        if (player.x < -300) player.x = -300; 
+        if (player.x < -300) player.x = -300;
 
-        if (playerBounds.overlaps(exitHitbox)) {
-            showExitSign = true;
+        if (!item1PickedUp && playerBounds.overlaps(itemHitbox1)) {
+            showPickupPrompt = true;
+            if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                Inventory.addItem("Diary Entry 3", "Diary Entry 2.png");
+                item1PickedUp = true;
+                evidenceToShow = 1;
+                state = State.EVIDENCE;
+            }
         }
 
-        if (player.x > 900) { 
-            // FIXED: Added returnArea 2
+        if (!item2PickedUp && playerBounds.overlaps(itemHitbox2)) {
+            showPickupPrompt = true;
+            if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                Inventory.addItem("Cecilia's Letter", "Cecilia 1.png");
+                item2PickedUp = true;
+                evidenceToShow = 2;
+                state = State.EVIDENCE;
+            }
+        }
+
+        if (!item3PickedUp && playerBounds.overlaps(itemHitbox3)) {
+            showPickupPrompt = true;
+            if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                Inventory.addItem("Cecilia's Uncle's Letter", "Cecilia Uncle 1.png");
+                item3PickedUp = true;
+                evidenceToShow = 3;
+                state = State.EVIDENCE;
+            }
+        }
+
+        if (playerBounds.overlaps(exitHitbox)) showExitSign = true;
+
+        if (player.x > 900) {
             game.setScreen(new GameScreen(game, true, returnX, returnY, 2));
         }
     }
@@ -154,5 +206,9 @@ game.setScreen(new LoadingScreen(game));
         batch.dispose(); stage.dispose(); inventory.dispose(); player.dispose();
         jHouse1.dispose(); pauseBg.dispose();
         resumeTex.dispose(); quitTex.dispose(); exitSign.dispose();
+        pickupPrompt.dispose();
+        evidenceTex1.dispose();
+        evidenceTex2.dispose();
+        evidenceTex3.dispose();
     }
 }

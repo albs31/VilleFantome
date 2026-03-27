@@ -70,12 +70,11 @@ public class JHouseScreen implements Screen {
         player.setSpeed(335.0f); 
 
         playerBounds = new Rectangle();
-        exitHitbox = new Rectangle(1000, 0, 280, 720);
 
-        // Adjust these x values to match where items appear in j'sroom.png
-        itemHitbox1 = new Rectangle(200, 0, 150, 720);
-        itemHitbox2 = new Rectangle(500, 0, 150, 720);
-        itemHitbox3 = new Rectangle(750, 0, 150, 720);
+        exitHitbox = new Rectangle(1000, 0, 250, 720);
+        itemHitbox1 = new Rectangle(150, 0, 150, 720);
+        itemHitbox2 = new Rectangle(475, 0, 150, 720);
+        itemHitbox3 = new Rectangle(800, 0, 150, 720);
 
         setupPauseMenu();
     }

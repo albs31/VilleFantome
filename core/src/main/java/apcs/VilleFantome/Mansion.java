@@ -301,10 +301,10 @@ public class Mansion implements Screen {
             }
 
         } else if (currentRoom == 3) {
-            if (player.x < -400) {
-                currentRoom = 2;
-                player.x = 850;
-            }
+            // Hard left wall — player cannot leave room 3 to the left
+            if (player.x < -240) player.x = -240;
+
+            // Hard right wall
             if (player.x > 900) player.x = 900;
         }
     }

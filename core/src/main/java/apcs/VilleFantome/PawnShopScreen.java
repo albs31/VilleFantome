@@ -97,12 +97,15 @@ public class PawnShopScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
+                SaveManager.save(returnX, returnY, 1, 7, "pawnshop");
+                game.setScreen(new LoadingScreen(game));
             }
         });
 
         stage.addActor(resumeButton);
         stage.addActor(quitButton);
     }
+
 
     @Override
     public void render(float delta) {

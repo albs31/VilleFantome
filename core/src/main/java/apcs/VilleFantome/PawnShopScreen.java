@@ -89,7 +89,7 @@ public class PawnShopScreen implements Screen {
         evidenceTex1 = new Texture("Evidence_In_Pawn_Shop.png");
         evidenceTex2 = new Texture("Diary Entry1.png");
 
-        player = new Player(-200, -100);
+        player = new Player(-300, -100); 
         currentRoom = 1;
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f);

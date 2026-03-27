@@ -66,7 +66,7 @@ public class Mansion implements Screen {
         evidenceTex1 = new Texture("Diary Entry 3.png");
         evidenceTex2 = new Texture("FinalDiaryEntry.png");
 
-        player = new Player(20, -100);
+        player = new Player(-300, -100); 
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f);
 

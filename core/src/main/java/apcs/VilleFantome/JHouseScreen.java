@@ -65,7 +65,7 @@ public class JHouseScreen implements Screen {
         evidenceTex2 = new Texture("Cecilia 1.png");
         evidenceTex3 = new Texture("Cecilia Uncle 1.png");
 
-        player = new Player(-300, -100); 
+        player = new Player(-300, -100);  
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f); 
 

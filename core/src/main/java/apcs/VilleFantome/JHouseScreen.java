@@ -38,9 +38,6 @@ public class JHouseScreen implements Screen {
     private Rectangle playerBounds, exitHitbox, itemHitbox1, itemHitbox2, itemHitbox3;
     private boolean showExitSign = false;
     private boolean showPickupPrompt = false;
-    private boolean item1PickedUp = false;
-    private boolean item2PickedUp = false;
-    private boolean item3PickedUp = false;
     private int evidenceToShow = 0;
 
     private float movementDelayTimer = 0f;
@@ -49,6 +46,24 @@ public class JHouseScreen implements Screen {
     private float evidenceCooldown = 0f;
 
     private float returnX, returnY;
+
+    // Instance pickup booleans (set from static on show())
+    private boolean item1PickedUp = false;
+    private boolean item2PickedUp = false;
+    private boolean item3PickedUp = false;
+
+    // Static variables — survive screen transitions
+    private static boolean hasVisitedBefore = false;
+    private static boolean item1AlreadyPickedUp = false;
+    private static boolean item2AlreadyPickedUp = false;
+    private static boolean item3AlreadyPickedUp = false;
+
+    public static void resetVisit() {
+        hasVisitedBefore = false;
+        item1AlreadyPickedUp = false;
+        item2AlreadyPickedUp = false;
+        item3AlreadyPickedUp = false;
+    }
 
     public JHouseScreen(Main game, float x, float y) {
         this.game = game;
@@ -89,7 +104,11 @@ public class JHouseScreen implements Screen {
         itemHitbox2 = new Rectangle(475, 0, 150, 720);
         itemHitbox3 = new Rectangle(800, 0, 150, 720);
 
-        // DIALOGUES 1 & 2 — after evidence 1
+        // Restore pickup state from previous visit
+        item1PickedUp = item1AlreadyPickedUp;
+        item2PickedUp = item2AlreadyPickedUp;
+        item3PickedUp = item3AlreadyPickedUp;
+
         postEvidence1Dialogue = new DialogueManager(
             new String[] {
                 "JOldhouseDialogue1.png",
@@ -102,29 +121,25 @@ public class JHouseScreen implements Screen {
             }
         );
 
-        // DIALOGUES 3 & 4 — after evidence 2
         postEvidence2Dialogue = new DialogueManager(
             new String[] {
                 "JOldhouseDialogue3.png",
-                
             },
-            new float[] { 0f, 0f },
+            new float[] { 0f },
             () -> {
                 activeDialogue = null;
                 state = State.RUNNING;
             }
         );
 
-        // DIALOGUE 5 — after evidence 3, chains into dialogue 6
         postEvidence3Dialogue = new DialogueManager(
             new String[] { "JOldhouseDialogue4.png", "JOldhouseDialogue5.png" },
             new float[] { 0f, 0f },
             () -> {
-                startDialogue(finalDialogue); // chains straight into dialogue 6
+                startDialogue(finalDialogue);
             }
         );
 
-        // DIALOGUE 6 — plays right after dialogue 5
         finalDialogue = new DialogueManager(
             new String[] { "JOldhouseDialogue6.png" },
             new float[] { 0f },
@@ -170,7 +185,7 @@ public class JHouseScreen implements Screen {
 
         if (state == State.EVIDENCE) {
             evidenceCooldown += delta;
-            if (evidenceCooldown > 0.2f && Gdx.input.isKeyJustPressed(Input.Keys.E) || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)){
+            if (evidenceCooldown > 0.2f && Gdx.input.isKeyJustPressed(Input.Keys.E) || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
                 evidenceCooldown = 0f;
                 if (evidenceToShow == 1) startDialogue(postEvidence1Dialogue);
                 else if (evidenceToShow == 2) startDialogue(postEvidence2Dialogue);
@@ -235,6 +250,7 @@ public class JHouseScreen implements Screen {
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                 Inventory.addItem("Cecilia's Letter", "Cecilia 1.png");
                 item1PickedUp = true;
+                item1AlreadyPickedUp = true;
                 evidenceToShow = 1;
                 evidenceCooldown = 0f;
                 showPickupPrompt = false;
@@ -247,6 +263,7 @@ public class JHouseScreen implements Screen {
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                 Inventory.addItem("Diary Entry 3", "Diary Entry 2.png");
                 item2PickedUp = true;
+                item2AlreadyPickedUp = true;
                 evidenceToShow = 2;
                 evidenceCooldown = 0f;
                 showPickupPrompt = false;
@@ -259,6 +276,7 @@ public class JHouseScreen implements Screen {
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                 Inventory.addItem("Cecilia's Uncle's Letter", "Cecilia Uncle 1.png");
                 item3PickedUp = true;
+                item3AlreadyPickedUp = true;
                 evidenceToShow = 3;
                 evidenceCooldown = 0f;
                 showPickupPrompt = false;

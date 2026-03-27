@@ -181,7 +181,7 @@ public class PawnShopScreen implements Screen {
             }
         } else if (state == State.EVIDENCE) {
             evidenceCooldown += delta;
-            if (evidenceCooldown > 0.1f && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+            if (evidenceCooldown > 0.1f && Gdx.input.isKeyJustPressed(Input.Keys.E) || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
                 evidenceCooldown = 0f;
                 if (evidenceToShow == 1) startDialogue(postEvidenceDialogue);
                 if (evidenceToShow == 2) startDialogue(postEvidence2Dialogue);
@@ -286,3 +286,4 @@ public class PawnShopScreen implements Screen {
         entryDialogue.dispose(); postEvidenceDialogue.dispose(); postEvidence2Dialogue.dispose();
     }
 }
+

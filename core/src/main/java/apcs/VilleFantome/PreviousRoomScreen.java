@@ -197,7 +197,7 @@ public class PreviousRoomScreen implements Screen {
             }
         } else if (state == State.EVIDENCE) {
             evidenceCooldown += delta;
-            if (evidenceCooldown > 0.2f && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+            if (evidenceCooldown > 0.2f && Gdx.input.isKeyJustPressed(Input.Keys.E) || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
                 evidenceCooldown = 0f;
                 if (evidenceToShow == 1) startDialogue(postEvidence1Dialogue);
                 else if (evidenceToShow == 2) startDialogue(postEvidence2Dialogue);

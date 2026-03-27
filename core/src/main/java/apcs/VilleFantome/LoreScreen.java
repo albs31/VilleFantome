@@ -13,7 +13,8 @@ public class LoreScreen implements Screen {
     private Main game;
     private SpriteBatch batch;
     private Stage stage;
-    private Texture loreImage;
+    private Texture[] pages;
+    private int currentPage = 0;
     private boolean inputSet = false;
 
     public LoreScreen(Main game) {
@@ -23,10 +24,19 @@ public class LoreScreen implements Screen {
     @Override
     public void show() {
         batch = new SpriteBatch();
-        loreImage = new Texture("spoilerwarning.png");
-
         stage = new Stage(new FitViewport(1280, 720));
 
+        pages = new Texture[] {
+            new Texture("spoilerwarning.png"), // shown first
+            new Texture("lore1.png"),
+            new Texture("lore2.png"),
+            new Texture("lore3.png"),
+            new Texture("lore4.png"),
+            new Texture("lore5.png"),
+            new Texture("lore6.png")
+        };
+
+        currentPage = 0;
         inputSet = false;
     }
 
@@ -40,14 +50,30 @@ public class LoreScreen implements Screen {
             inputSet = true;
         }
 
-        batch.setProjectionMatrix(stage.getCamera().combined);
-        batch.begin();
-        batch.draw(loreImage, 0, 0, 1280, 720);
-        batch.end();
-
+        // ESC always returns to loading screen
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             game.setScreen(new LoadingScreen(game));
+            return;
         }
+
+        // Click or right arrow to advance
+        if (Gdx.input.justTouched() || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
+            if (currentPage < pages.length - 1) {
+                currentPage++;
+            } else {
+                game.setScreen(new LoadingScreen(game)); // end of lore → back to menu
+            }
+        }
+
+        // Left arrow to go back
+        if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && currentPage > 0) {
+            currentPage--;
+        }
+
+        batch.setProjectionMatrix(stage.getCamera().combined);
+        batch.begin();
+        batch.draw(pages[currentPage], 0, 0, 1280, 720);
+        batch.end();
 
         stage.act(delta);
         stage.draw();
@@ -61,8 +87,8 @@ public class LoreScreen implements Screen {
     @Override
     public void dispose() {
         batch.dispose();
-        loreImage.dispose();
         stage.dispose();
+        for (Texture t : pages) t.dispose();
     }
 
     @Override

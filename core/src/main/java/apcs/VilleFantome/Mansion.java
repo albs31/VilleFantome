@@ -22,21 +22,25 @@ public class Mansion implements Screen {
     private Player player;
     private Inventory inventory;
 
-    private enum State { RUNNING, PAUSED }
+    private enum State { RUNNING, PAUSED, EVIDENCE }
     private State state = State.RUNNING;
 
     private Texture mansion3, mansion1, mansion2;
     private Texture pauseBg, resumeTex, quitTex;
+    private Texture pickupPrompt, evidenceTex1, evidenceTex2;
     private ImageButton resumeButton, quitButton;
 
-    private Rectangle playerBounds;
+    private Rectangle playerBounds, itemHitbox1, itemHitbox2;
+    private boolean showPickupPrompt = false;
+    private boolean item1PickedUp = false;
+    private boolean item2PickedUp = false;
+    private int evidenceToShow = 0;
 
     private float movementDelayTimer = 0f;
     private final float MAX_DELAY = 0.04f;
 
     private float returnX, returnY;
 
-    // 1 = Mansion 3, 2 = Mansion 1, 3 = Mansion 2
     private int currentRoom = 1;
 
     public Mansion(Main game, float x, float y) {
@@ -55,16 +59,22 @@ public class Mansion implements Screen {
         mansion3 = new Texture("Mansion 3.png");
         mansion1 = new Texture("Mansion 1.png");
         mansion2 = new Texture("Mansion 2.png");
-
         pauseBg = new Texture("pause_screen.png");
         resumeTex = new Texture("resume_button.png");
         quitTex = new Texture("quitbutton.png");
+        pickupPrompt = new Texture("pickupitem.png");
+        evidenceTex1 = new Texture("Diary Entry 3.png");
+        evidenceTex2 = new Texture("FinalDiaryEntry.png");
 
         player = new Player(20, -100);
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f);
 
         playerBounds = new Rectangle();
+
+        // Adjust x values to match where items appear in each background
+        itemHitbox1 = new Rectangle(400, 0, 150, 720); // Diary Entry 3 in Mansion 3.png
+        itemHitbox2 = new Rectangle(400, 0, 150, 720); // Final Diary Entry in Mansion 1.png
 
         setupPauseMenu();
     }
@@ -98,12 +108,17 @@ public class Mansion implements Screen {
 
     @Override
     public void render(float delta) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
-            Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
+        if (state == State.EVIDENCE) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                state = State.RUNNING;
+            }
+        } else {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+                state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
+                Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
+            }
+            if (state == State.RUNNING) updateGame(delta);
         }
-
-        if (state == State.RUNNING) updateGame(delta);
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -111,18 +126,17 @@ public class Mansion implements Screen {
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
 
-        if (currentRoom == 1) {
-            batch.draw(mansion3, 0, 0, 1280, 720);
-        } else if (currentRoom == 2) {
-            batch.draw(mansion1, 0, 0, 1280, 720);
-        } else {
-            batch.draw(mansion2, 0, 0, 1280, 720);
-        }
+        if (currentRoom == 1) batch.draw(mansion3, 0, 0, 1280, 720);
+        else if (currentRoom == 2) batch.draw(mansion1, 0, 0, 1280, 720);
+        else batch.draw(mansion2, 0, 0, 1280, 720);
 
         player.draw(batch);
 
-        if (state == State.PAUSED) {
-            batch.draw(pauseBg, 0, 0, 1280, 720);
+        if (showPickupPrompt) batch.draw(pickupPrompt, 0, 0, 1280, 720);
+        if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
+        if (state == State.EVIDENCE) {
+            if (evidenceToShow == 1) batch.draw(evidenceTex1, 0, 0, 1280, 720);
+            if (evidenceToShow == 2) batch.draw(evidenceTex2, 0, 0, 1280, 720);
         }
 
         batch.end();
@@ -130,10 +144,7 @@ public class Mansion implements Screen {
         inventory.handleInput();
         inventory.render(delta);
 
-        if (state == State.PAUSED) {
-            stage.act(delta);
-            stage.draw();
-        }
+        if (state == State.PAUSED) { stage.act(delta); stage.draw(); }
     }
 
     private void updateGame(float delta) {
@@ -145,21 +156,39 @@ public class Mansion implements Screen {
         player.update(delta);
         playerBounds.set(player.x + 170, player.y + 40, 140, 260);
 
-        // Left barrier — applies to all rooms
         if (player.x < -300) player.x = -300;
 
+        showPickupPrompt = false;
+
         if (currentRoom == 1) {
+            if (!item1PickedUp && playerBounds.overlaps(itemHitbox1)) {
+                showPickupPrompt = true;
+                if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                    Inventory.addItem("Diary Entry 3", "Diary Entry 3.png");
+                    item1PickedUp = true;
+                    evidenceToShow = 1;
+                    state = State.EVIDENCE;
+                }
+            }
             if (player.x > 900) {
                 currentRoom = 2;
                 player.x = -250;
             }
         } else if (currentRoom == 2) {
+            if (!item2PickedUp && playerBounds.overlaps(itemHitbox2)) {
+                showPickupPrompt = true;
+                if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                    Inventory.addItem("Final Diary Entry", "FinalDiaryEntry.png");
+                    item2PickedUp = true;
+                    evidenceToShow = 2;
+                    state = State.EVIDENCE;
+                }
+            }
             if (player.x > 900) {
                 currentRoom = 3;
                 player.x = -250;
             }
         } else if (currentRoom == 3) {
-            // ← blocked, no exit — right barrier keeps player inside
             if (player.x > 900) player.x = 900;
         }
     }
@@ -182,5 +211,8 @@ public class Mansion implements Screen {
         pauseBg.dispose();
         resumeTex.dispose();
         quitTex.dispose();
+        pickupPrompt.dispose();
+        evidenceTex1.dispose();
+        evidenceTex2.dispose();
     }
 }

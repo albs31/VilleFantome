@@ -221,8 +221,8 @@ public class GameScreen implements Screen {
             player.update(delta);
             playerBounds.set(player.x + 470, player.y + 40, 60, 400);
 
-            // Left barrier — prevents player from walking off the left edge
-            if (player.x < -50) {
+            // Left barrier — prevents player from walking off the left edge ONLY in area 1
+            if (currentArea == 1 && player.x < -50) {
                 player.x = -50;
             }
 

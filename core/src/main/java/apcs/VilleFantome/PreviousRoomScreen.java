@@ -35,6 +35,7 @@ public class PreviousRoomScreen implements Screen {
     private DialogueManager postEvidence2Dialogue;
     private DialogueManager postEvidence3Dialogue;
     private DialogueManager postEvidence4Dialogue;
+    private DialogueManager finalDialogue;
     private DialogueManager activeDialogue = null;
 
     private int currentRoom = 1;
@@ -99,9 +100,9 @@ public class PreviousRoomScreen implements Screen {
         itemHitbox3 = new Rectangle(400, 0, 200, 720);
         itemHitbox4 = new Rectangle(865, 0, 200, 720);
 
-        // SEQUENCE 1 — entry dialogue
+        // DIALOGUE 1 — entry
         entryDialogue = new DialogueManager(
-            new String[] { "PreviousRoomDialogue1.png" },
+            new String[] { "Theo'sOldRoomDialogue1.png" },
             new float[]  { 0f },
             () -> {
                 activeDialogue = null;
@@ -109,9 +110,9 @@ public class PreviousRoomScreen implements Screen {
             }
         );
 
-        // SEQUENCE 2 — after evidence 1
+        // DIALOGUE 2 — after evidence 1
         postEvidence1Dialogue = new DialogueManager(
-            new String[] { "PreviousRoomDialogue2.png" },
+            new String[] { "Theo'sOldRoomDialogue .png" },
             new float[]  { 0f },
             () -> {
                 activeDialogue = null;
@@ -119,9 +120,9 @@ public class PreviousRoomScreen implements Screen {
             }
         );
 
-        // SEQUENCE 3 — after evidence 2
+        // DIALOGUE 3 — after evidence 2
         postEvidence2Dialogue = new DialogueManager(
-            new String[] { "PreviousRoomDialogue3.png" },
+            new String[] { "Theo'sOldRoomDialogue3.png" },
             new float[]  { 0f },
             () -> {
                 activeDialogue = null;
@@ -129,9 +130,9 @@ public class PreviousRoomScreen implements Screen {
             }
         );
 
-        // SEQUENCE 4 — after evidence 3
+        // DIALOGUE 4 — after evidence 3
         postEvidence3Dialogue = new DialogueManager(
-            new String[] { "PreviousRoomDialogue4.png" },
+            new String[] { "Theo'sOldRoomDialogue2.png" },
             new float[]  { 0f },
             () -> {
                 activeDialogue = null;
@@ -139,9 +140,18 @@ public class PreviousRoomScreen implements Screen {
             }
         );
 
-        // SEQUENCE 5 — after evidence 4
+        // DIALOGUE 5 — after evidence 4, then immediately triggers dialogue 6
         postEvidence4Dialogue = new DialogueManager(
-            new String[] { "PreviousRoomDialogue5.png" },
+            new String[] { "Theo'sOldRoomDialogue5.png" },
+            new float[]  { 0f },
+            () -> {
+                startDialogue(finalDialogue); // automatically chains into dialogue 6
+            }
+        );
+
+        // DIALOGUE 6 — final, plays right after dialogue 5
+        finalDialogue = new DialogueManager(
+            new String[] { "Theo'sOldRoomDialogue6.png" },
             new float[]  { 0f },
             () -> {
                 activeDialogue = null;
@@ -328,6 +338,6 @@ public class PreviousRoomScreen implements Screen {
         evidenceTex3.dispose(); evidenceTex4.dispose();
         entryDialogue.dispose(); postEvidence1Dialogue.dispose();
         postEvidence2Dialogue.dispose(); postEvidence3Dialogue.dispose();
-        postEvidence4Dialogue.dispose();
+        postEvidence4Dialogue.dispose(); finalDialogue.dispose();
     }
 }

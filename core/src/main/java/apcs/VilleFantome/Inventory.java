@@ -5,11 +5,13 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import java.util.ArrayList;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 
 public class Inventory {
     private boolean isOpen = false;
@@ -108,11 +110,12 @@ public class Inventory {
         } else {
             // Show evidence list
             font.setColor(Color.WHITE);
-            font.draw(batch, "== EVIDENCE ==", 480, 650);
+            font.draw(batch, "COLLECTED EVIDENCE", 480, 650);
 
             if (collectedItems.isEmpty()) {
-                font.setColor(Color.GRAY);
-                font.draw(batch, "No evidence collected yet.", 380, 580);
+                font.setColor(Color.WHITE);
+                GlyphLayout layout = new GlyphLayout(font, "No evidence has been collected, continue to explore the town.");
+                font.draw(batch, layout, (1280 - layout.width) / 2, 580);
             } else {
                 float yPos = 580;
                 for (int i = 0; i < collectedItems.size(); i++) {
@@ -125,7 +128,7 @@ public class Inventory {
                     yPos -= 50;
                 }
                 font.setColor(Color.GRAY);
-                font.draw(batch, "UP/DOWN to scroll   E to view   Q to close", 300, 60);
+                font.draw(batch, "Arrow keys to scroll // E to view // Q to close", 300, 60);
             }
         }
 

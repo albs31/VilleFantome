@@ -57,7 +57,6 @@ public class PawnShopScreen implements Screen {
         quitTex = new Texture("quitbutton.png");
         exitSign = new Texture("exitsign.png");
 
-        // Spawn on the left side of the first room
         player = new Player(20, -100); 
         currentRoom = 1; 
         
@@ -65,8 +64,6 @@ public class PawnShopScreen implements Screen {
         player.setSpeed(335.0f); 
 
         playerBounds = new Rectangle();
-        
-        // Hitbox for the exit sign: only the leftmost 20 pixels
         exitHitbox = new Rectangle(1000, 0, 280, 720); 
 
         setupPauseMenu();
@@ -90,7 +87,8 @@ public class PawnShopScreen implements Screen {
         quitButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new GameScreen(game, true, returnX, returnY));
+                // FIXED: Added returnArea 1
+                game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
             }
         });
 
@@ -113,12 +111,9 @@ public class PawnShopScreen implements Screen {
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
         
-        // Draw background based on current room
         batch.draw(currentRoom == 1 ? pawnShop1 : pawnShop2, 0, 0, 1280, 720);
-        
         player.draw(batch);
 
-        // Layer the exit sign over the entire screen if triggered in Room 2
         if (currentRoom == 2 && showExitSign) {
             batch.draw(exitSign, 0, 0, 1280, 720); 
         }
@@ -145,29 +140,24 @@ public class PawnShopScreen implements Screen {
 
         if (currentRoom == 1) {
             if (player.x < -300) player.x = -300; 
-            
-            // GO TO ROOM 2
             if (player.x >= 1100) { 
                 currentRoom = 2;
                 player.x = -270;    
             }
         } 
         else if (currentRoom == 2) {
-            // SHOW EXIT SIGN (When near the right side)
             if (playerBounds.overlaps(exitHitbox)) {
                 showExitSign = true;
             }
 
-            // RETURN TO ROOM 1 (Walking Left)
             if (player.x <= -275) { 
                 currentRoom = 1;
-                player.x = 850; // Set this slightly lower than the Room 2 trigger
+                player.x = 850; 
             }
 
-            // RETURN TO TOWN (Walking Right)
-            // Increased this to 1150 so it doesn't trigger accidentally
             if (player.x > 900) { 
-                game.setScreen(new GameScreen(game, true, returnX, returnY));
+                // FIXED: Added returnArea 1
+                game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
             }
         }
     }

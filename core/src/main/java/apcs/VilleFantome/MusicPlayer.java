@@ -4,18 +4,20 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 
 public class MusicPlayer { 
-
     private Music music;
 
     public void playMusic() {
-        // LibGDX looks in your 'assets' folder by default
-        music = Gdx.audio.newMusic(Gdx.files.internal("eeriemusic.mp3"));
-        
-        music.setLooping(true);
-        music.setVolume(0.5f); // Set volume between 0.0 and 1.0
-        music.play();
-    }
+        // Only load and play if music hasn't been initialized yet
+        if (music == null) {
+            music = Gdx.audio.newMusic(Gdx.files.internal("eeriemusic.mp3"));
+            music.setLooping(true);
+            music.setVolume(0.5f);
+            music.play();
 
+        } else if (!music.isPlaying()) {
+            music.play();
+        }
+    }
     public void stopMusic() {
         if (music != null) {
             music.stop();

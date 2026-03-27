@@ -29,7 +29,9 @@ public class GameScreen implements Screen {
 
     private Texture pauseBg, resumeTex, quitTex, enterSign;
     private Texture background1, background2;
-    private int currentArea = 1;
+    
+    private int currentArea = 1; 
+    private int returnArea;      
 
     private ImageButton resumeButton, quitButton;
     private Texture[] dialogueScreens;
@@ -52,11 +54,13 @@ public class GameScreen implements Screen {
     
     private float spawnX, spawnY;
 
-    public GameScreen(Main game, boolean isReturning, float x, float y) {
+    // CONSTRUCTOR FIX: 5 Arguments total
+    public GameScreen(Main game, boolean isReturning, float x, float y, int returnArea) {
         this.game = game;
         this.isReturning = isReturning;
         this.spawnX = x;
         this.spawnY = y;
+        this.returnArea = returnArea; 
     }
 
     @Override
@@ -83,24 +87,23 @@ public class GameScreen implements Screen {
         dialogueHasSound = new boolean[] { true, false, true, false, false, false, false };
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
 
+        // CRITICAL FIX: Create player immediately
+        player = new Player(spawnX, spawnY); 
+
         if (isReturning) {
-            currentDialogueIndex = dialogueScreens.length;
-            player = new Player(spawnX, spawnY); 
+            currentDialogueIndex = dialogueScreens.length; 
+            this.currentArea = returnArea; 
             movementDelayTimer = 0.0f; 
             fadeAlpha = 1.0f; 
         } else {
-            currentDialogueIndex = 0;
-            player = new Player(10, 20);
-            if (dialogueHasSound[0]) {
-                typeSound.play(1.0f);
-                soundPlaying = true;
-            }
+            currentArea = 1;
+            player.x = 10;
+            player.y = 20;
         }
 
-        // Initialize Door Hitboxes
         door1Bounds = new Rectangle(930, 10, 10, 180); 
-        door2Bounds = new Rectangle(1230, 10, 10, 180); // Leads to Previous Room
-        player3Bounds = new Rectangle(390, 20, 80, 180);
+        door2Bounds = new Rectangle(1230, 10, 10, 180); 
+        player3Bounds = new Rectangle(390, 10, 40, 100); 
         playerBounds = new Rectangle();
 
         setupPauseMenu();
@@ -138,13 +141,8 @@ public class GameScreen implements Screen {
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
-            if (state == State.PAUSED) { 
-                Gdx.input.setInputProcessor(stage); 
-                typeSound.pause(); 
-            } else { 
-                Gdx.input.setInputProcessor(null); 
-                typeSound.resume(); 
-            }
+            Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
+            if (state == State.PAUSED) typeSound.pause(); else typeSound.resume();
         }
 
         if (state == State.RUNNING) updateGame(delta);
@@ -160,10 +158,8 @@ public class GameScreen implements Screen {
             batch.draw(currentTex, 0, 0, 1280, 720);
         } else {
             batch.draw(currentArea == 1 ? background1 : background2, 0, 0, 1280, 720);
-            player.draw(batch);
-            if (showEnterSign) {
-                batch.draw(enterSign, 0, 0, 1280, 720); 
-            }
+            if (player != null) player.draw(batch); 
+            if (showEnterSign) batch.draw(enterSign, 0, 0, 1280, 720); 
         }
 
         if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
@@ -182,7 +178,7 @@ public class GameScreen implements Screen {
     }
 
     private void updateGame(float delta) {
-        if (showControls) return;
+        if (showControls || player == null) return;
 
         if (soundPlaying) {
             soundTimer += delta;
@@ -215,33 +211,25 @@ public class GameScreen implements Screen {
             }
 
             showEnterSign = false;
+
             if (currentArea == 1) {
-                // Check Door 1 (Pawn Shop)
                 if (playerBounds.overlaps(door1Bounds)) {
                     showEnterSign = true;
-                    if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
+                    if (Gdx.input.isKeyJustPressed(Input.Keys.F)) 
                         game.setScreen(new PawnShopScreen(game, player.x, player.y));
-                    }
                 }
-
-                // Check Door 2 (Previous Room)
                 if (playerBounds.overlaps(door2Bounds)) {
                     showEnterSign = true;
-                    if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
+                    if (Gdx.input.isKeyJustPressed(Input.Keys.F)) 
                         game.setScreen(new PreviousRoomScreen(game, player.x, player.y));
-                    }
-               if (currentArea == 2) {
+                }
+            } 
+            else if (currentArea == 2) {
                 if (playerBounds.overlaps(player3Bounds)) {
                     showEnterSign = true;
+                    if (Gdx.input.isKeyJustPressed(Input.Keys.F)) 
+                        game.setScreen(new JHouseScreen(game, player.x, player.y));
                 }
-
-                if (showEnterSign && Gdx.input.isKeyJustPressed(Input.Keys.F)) {
-                    game.setScreen(new JHouseScreen(game, player.x, player.y));
-                }
-            }
-        }
-    }
-        }
             }
         }
     }
@@ -267,6 +255,6 @@ public class GameScreen implements Screen {
         typeSound.dispose(); pauseBg.dispose(); resumeTex.dispose();
         quitTex.dispose(); enterSign.dispose(); inventory.dispose();
         for (Texture t : dialogueScreens) t.dispose();
-        player.dispose();
+        if (player != null) player.dispose();
     }
 }

@@ -25,15 +25,15 @@ public class JHouseScreen implements Screen {
     private enum State { RUNNING, PAUSED }
     private State state = State.RUNNING;
 
-    private Texture jRoom, pauseBg, resumeTex, quitTex, exitSign;
+    private Texture jHouse1, pauseBg, resumeTex, quitTex, exitSign;
     private ImageButton resumeButton, quitButton;
 
     private Rectangle playerBounds, exitHitbox;
     private boolean showExitSign = false;
-
+    
     private float movementDelayTimer = 0f;
     private final float MAX_DELAY = 0.04f;
-
+    
     private float returnX, returnY;
 
     public JHouseScreen(Main game, float x, float y) {
@@ -49,23 +49,18 @@ public class JHouseScreen implements Screen {
         inventory = new Inventory();
         Gdx.input.setInputProcessor(null);
 
-        jRoom = new Texture("j'sroom.png");
+        jHouse1 = new Texture("j'sroom.png"); 
         pauseBg = new Texture("pause_screen.png");
         resumeTex = new Texture("resume_button.png");
         quitTex = new Texture("quitbutton.png");
         exitSign = new Texture("exitsign.png");
 
-        // Spawn on the left side of J's room
-        player = new Player(20, -100);
-
-        // Resize / speed for inside room
+        player = new Player(20, -100); 
         player.setDrawSize(1000, 1000);
-        player.setSpeed(335.0f);
+        player.setSpeed(335.0f); 
 
         playerBounds = new Rectangle();
-
-        // Right side exit trigger
-        exitHitbox = new Rectangle(1000, 0, 280, 720);
+        exitHitbox = new Rectangle(1000, 0, 280, 720); 
 
         setupPauseMenu();
     }
@@ -88,7 +83,8 @@ public class JHouseScreen implements Screen {
         quitButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new GameScreen(game, true, returnX, returnY));
+                // FIXED: Added returnArea 2
+                game.setScreen(new GameScreen(game, true, returnX, returnY, 2));
             }
         });
 
@@ -110,12 +106,12 @@ public class JHouseScreen implements Screen {
 
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
-
-        batch.draw(jRoom, 0, 0, 1280, 720);
+        
+        batch.draw(jHouse1, 0, 0, 1280, 720);
         player.draw(batch);
 
         if (showExitSign) {
-            batch.draw(exitSign, 0, 0, 1280, 720);
+            batch.draw(exitSign, 0, 0, 1280, 720); 
         }
 
         if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
@@ -124,10 +120,7 @@ public class JHouseScreen implements Screen {
         inventory.handleInput();
         inventory.render(delta);
 
-        if (state == State.PAUSED) {
-            stage.act(delta);
-            stage.draw();
-        }
+        if (state == State.PAUSED) { stage.act(delta); stage.draw(); }
     }
 
     private void updateGame(float delta) {
@@ -137,49 +130,29 @@ public class JHouseScreen implements Screen {
         }
 
         player.update(delta);
-
-        // Adjust this hitbox if Theo inside this room feels off
         playerBounds.set(player.x + 170, player.y + 40, 140, 260);
 
         showExitSign = false;
 
-        // Stop him from going too far left
-        if (player.x < -300) player.x = -300;
+        if (player.x < -300) player.x = -300; 
 
-        // Show exit sign near right side
         if (playerBounds.overlaps(exitHitbox)) {
             showExitSign = true;
         }
 
-        // Leave room and return to town
-        if (player.x > 900) {
-            game.setScreen(new GameScreen(game, true, returnX, returnY));
+        if (player.x > 900) { 
+            // FIXED: Added returnArea 2
+            game.setScreen(new GameScreen(game, true, returnX, returnY, 2));
         }
     }
 
-    @Override
-    public void resize(int w, int h) {
-        stage.getViewport().update(w, h, true);
-    }
-
-    @Override
-    public void hide() {
-        Gdx.input.setInputProcessor(null);
-    }
-
+    @Override public void resize(int w, int h) { stage.getViewport().update(w, h, true); }
+    @Override public void hide() { Gdx.input.setInputProcessor(null); }
     @Override public void pause() {}
     @Override public void resume() {}
-
-    @Override
-    public void dispose() {
-        batch.dispose();
-        stage.dispose();
-        inventory.dispose();
-        player.dispose();
-        jRoom.dispose();
-        pauseBg.dispose();
-        resumeTex.dispose();
-        quitTex.dispose();
-        exitSign.dispose();
+    @Override public void dispose() {
+        batch.dispose(); stage.dispose(); inventory.dispose(); player.dispose();
+        jHouse1.dispose(); pauseBg.dispose();
+        resumeTex.dispose(); quitTex.dispose(); exitSign.dispose();
     }
 }

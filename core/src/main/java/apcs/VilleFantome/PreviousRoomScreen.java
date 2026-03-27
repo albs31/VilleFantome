@@ -106,8 +106,8 @@ public class PreviousRoomScreen implements Screen {
 
             // RETURN TO TOWN (Walking Right)
             if (player.x > 900) { 
-                game.setScreen(new GameScreen(game, true, returnX, returnY));
-            }
+    game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
+}
         }
     }
 

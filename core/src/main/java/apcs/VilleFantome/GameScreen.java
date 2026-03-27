@@ -211,6 +211,7 @@ public class GameScreen implements Screen {
                 currentArea = 1; 
                 player.x = 1200;
             }
+        }
 
             showEnterSign = false;
 

@@ -18,18 +18,30 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 public class PreviousRoomScreen implements Screen {
     private Main game;
     private SpriteBatch batch;
-    private Texture roomPt1, roomPt2, exitSign, pauseBg, resumeTex, quitTex;
+    private Texture roomPt1, roomPt2, exitSign;
     private Player player;
     private Stage stage;
     private Inventory inventory;
-    private ImageButton resumeButton, quitButton;
 
-    private enum State { RUNNING, PAUSED }
+    private enum State { RUNNING, PAUSED, EVIDENCE }
     private State state = State.RUNNING;
 
-    private int currentRoom = 1;
-    private Rectangle playerBounds, exitHitbox;
+    private Texture pauseBg, resumeTex, quitTex;
+    private ImageButton resumeButton, quitButton;
+    private Texture pickupPrompt, evidenceTex1, evidenceTex2, evidenceTex3, evidenceTex4;
+
+    private int currentRoom = 1; // Now starts in Room 1
+    private Rectangle playerBounds, exitHitbox, itemHitbox1, itemHitbox2, itemHitbox3, itemHitbox4;
     private boolean showExitSign = false;
+    private boolean showPickupPrompt = false;
+    private boolean item1PickedUp = false;
+    private boolean item2PickedUp = false;
+    private boolean item3PickedUp = false;
+    private boolean item4PickedUp = false;
+    private int evidenceToShow = 0;
+
+    private float movementDelayTimer = 0f;
+    private final float MAX_DELAY = 0.04f;
     
     private float returnX, returnY;
 
@@ -45,20 +57,32 @@ public class PreviousRoomScreen implements Screen {
         stage = new Stage(new FitViewport(1280, 720));
         inventory = new Inventory();
         Gdx.input.setInputProcessor(null);
-        
+
         roomPt1 = new Texture("His_Previous_Room1.png");
         roomPt2 = new Texture("His_Previous_Room2.png");
-        exitSign = new Texture("exitsign.png");
         pauseBg = new Texture("pause_screen.png");
         resumeTex = new Texture("resume_button.png");
         quitTex = new Texture("quitbutton.png");
+        exitSign = new Texture("exitsign.png");
+        pickupPrompt = new Texture("pickupitem.png");
+        evidenceTex1 = new Texture("J's Letter 1.png");
+        evidenceTex2 = new Texture("J's Letter 2.png");
+        evidenceTex3 = new Texture("scrapped letter 1.png");
+        evidenceTex4 = new Texture("Scrapped letter 2.png");
 
-        player = new Player(20, -100); 
+        // Spawn on the left side of Room 1
+        player = new Player(-200, -100); 
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f); 
 
         playerBounds = new Rectangle();
-        exitHitbox = new Rectangle(1000, 0, 280, 720);
+        
+        // Exit hitbox (to return to town) is now in Room 2 on the right side
+        exitHitbox = new Rectangle(1000, 0, 200, 720); 
+        itemHitbox1 = new Rectangle(150, 0, 200, 720); 
+        itemHitbox2 = new Rectangle(500, 0, 200, 720);
+        itemHitbox3 = new Rectangle(400, 0, 200, 720);
+        itemHitbox4 = new Rectangle(865, 0, 200, 720);
 
         setupPauseMenu();
     }
@@ -81,8 +105,7 @@ public class PreviousRoomScreen implements Screen {
         quitButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-               SaveManager.save(player.x, player.y, 1, 7, "previousroom");
-game.setScreen(new LoadingScreen(game));
+                game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
             }
         });
 
@@ -92,24 +115,36 @@ game.setScreen(new LoadingScreen(game));
 
     @Override
     public void render(float delta) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
-            Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
+        if (state == State.EVIDENCE) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                state = State.RUNNING;
+            }
+        } else {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+                state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
+                Gdx.input.setInputProcessor(state == State.PAUSED ? stage : null);
+            }
+            if (state == State.RUNNING) updateGame(delta);
         }
-
-        if (state == State.RUNNING) updateGame(delta);
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
-        
+
         batch.draw(currentRoom == 1 ? roomPt1 : roomPt2, 0, 0, 1280, 720);
         player.draw(batch);
 
         if (currentRoom == 2 && showExitSign) batch.draw(exitSign, 0, 0, 1280, 720);
+        if (showPickupPrompt) batch.draw(pickupPrompt, 0, 0, 1280, 720);
         if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
+        if (state == State.EVIDENCE) {
+            if (evidenceToShow == 1) batch.draw(evidenceTex1, 0, 0, 1280, 720);
+            if (evidenceToShow == 2) batch.draw(evidenceTex2, 0, 0, 1280, 720);
+            if (evidenceToShow == 3) batch.draw(evidenceTex3, 0, 0, 1280, 720);
+            if (evidenceToShow == 4) batch.draw(evidenceTex4, 0, 0, 1280, 720);
+        }
 
         batch.end();
 
@@ -120,31 +155,91 @@ game.setScreen(new LoadingScreen(game));
     }
 
     private void updateGame(float delta) {
+        if (movementDelayTimer < MAX_DELAY) {
+            movementDelayTimer += delta;
+            return;
+        }
+
         player.update(delta);
         playerBounds.set(player.x + 170, player.y + 40, 140, 260);
 
         showExitSign = false;
+        showPickupPrompt = false;
 
         if (currentRoom == 1) {
-            if (player.x < -300) player.x = -300; 
-            if (player.x >= 1100) { 
+            if (!item1PickedUp && playerBounds.overlaps(itemHitbox1)) {
+                showPickupPrompt = true;
+                if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                    Inventory.addItem("J's Letter 1", "J's Letter 1.png");
+                    item1PickedUp = true;
+                    evidenceToShow = 1;
+                    state = State.EVIDENCE;
+                }
+            }
+            if (!item2PickedUp && playerBounds.overlaps(itemHitbox2)) {
+                showPickupPrompt = true;
+                if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                    Inventory.addItem("J's Letter 2", "J's Letter 2.png");
+                    item2PickedUp = true;
+                    evidenceToShow = 2;
+                    state = State.EVIDENCE;
+                }
+            }
+
+            if (player.x < -300) player.x = -300;
+            if (player.x >= 1100) {
                 currentRoom = 2;
                 player.x = -270;
             }
+
         } else if (currentRoom == 2) {
             if (playerBounds.overlaps(exitHitbox)) showExitSign = true;
+
+            if (!item3PickedUp && playerBounds.overlaps(itemHitbox3)) {
+                showPickupPrompt = true;
+                if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                    Inventory.addItem("Scrapped Letter 1", "scrapped letter 1.png");
+                    item3PickedUp = true;
+                    evidenceToShow = 3;
+                    state = State.EVIDENCE;
+                }
+            }
+            if (!item4PickedUp && playerBounds.overlaps(itemHitbox4)) {
+                showPickupPrompt = true;
+                if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                    Inventory.addItem("Scrapped Letter 2", "Scrapped letter 2.png");
+                    item4PickedUp = true;
+                    evidenceToShow = 4;
+                    state = State.EVIDENCE;
+                }
+            }
+
             if (player.x <= -275) { currentRoom = 1; player.x = 850; }
-            if (player.x > 900) game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
+            if (player.x > 1100) {
+                game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
+            }
         }
     }
 
-    @Override public void resize(int w, int h) { stage.getViewport().update(w, h, true); }
+    @Override public void resize(int width, int height) { stage.getViewport().update(width, height, true); }
     @Override public void hide() { Gdx.input.setInputProcessor(null); }
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void dispose() {
-        batch.dispose(); stage.dispose(); inventory.dispose(); player.dispose();
-        roomPt1.dispose(); roomPt2.dispose(); exitSign.dispose();
-        pauseBg.dispose(); resumeTex.dispose(); quitTex.dispose();
+        batch.dispose();
+        roomPt1.dispose();
+        roomPt2.dispose();
+        pauseBg.dispose();
+        pickupPrompt.dispose();
+        evidenceTex1.dispose();
+        evidenceTex2.dispose();
+        evidenceTex3.dispose();
+        evidenceTex4.dispose();
+        resumeTex.dispose();
+        quitTex.dispose();
+        exitSign.dispose();
+        player.dispose();
+        inventory.dispose();
+        stage.dispose();
     }
 }

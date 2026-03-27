@@ -73,6 +73,7 @@ public class GameScreen implements Screen {
         quitTex = new Texture("quitbutton.png");
         enterSign = new Texture("entersign.png");
 
+        // RESTORED: Initializing the dialogue arrays
         dialogueScreens = new Texture[] {
             new Texture("Narrator_box1.png"), new Texture("Theo_Diary_Entry1.png"),
             new Texture("Narrator_box2.png"), new Texture("Theo_dialogue_2.png"),
@@ -84,20 +85,11 @@ public class GameScreen implements Screen {
         typeSound = Gdx.audio.newSound(Gdx.files.internal("NarratorTypeSound.mp3"));
 
         if (isReturning) {
-    // Skip the opening dialogue
-    currentDialogueIndex = dialogueScreens.length;
-    
-    // Spawn Theo where he was standing before entering the shop
-    player = new Player(spawnX, spawnY); 
-    
-    // THE PAUSE: Setting this to 0 means updateGame() won't move him 
-    // until it counts back up to 1.0 (MAX_DELAY)
-    movementDelayTimer = 0.0f; 
-    
-    // Optional: Reset fade so the town fades in from black
-    fadeAlpha = 1.0f; 
-    
-} else {
+            currentDialogueIndex = dialogueScreens.length;
+            player = new Player(spawnX, spawnY); 
+            movementDelayTimer = 0.0f; 
+            fadeAlpha = 1.0f; 
+        } else {
             currentDialogueIndex = 0;
             player = new Player(10, 20);
             if (dialogueHasSound[0]) {
@@ -106,7 +98,8 @@ public class GameScreen implements Screen {
             }
         }
 
-        door1Bounds = new Rectangle(730, 10, 20, 180);
+        // INITIALIZED: Creating the rectangle objects to prevent NullPointerException
+        door1Bounds = new Rectangle(930, 10, 10, 180); 
         playerBounds = new Rectangle();
 
         setupPauseMenu();
@@ -138,58 +131,56 @@ public class GameScreen implements Screen {
     }
 
     @Override
-public void render(float delta) {
-    if (Gdx.input.isKeyJustPressed(Input.Keys.Y)) showControls = !showControls;
-    if (fadeAlpha > 0) fadeAlpha = Math.max(0, fadeAlpha - delta * fadeSpeed);
+    public void render(float delta) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.Y)) showControls = !showControls;
+        if (fadeAlpha > 0) fadeAlpha = Math.max(0, fadeAlpha - delta * fadeSpeed);
 
-    if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-        state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
-        if (state == State.PAUSED) { 
-            Gdx.input.setInputProcessor(stage); 
-            typeSound.pause(); 
-        } else { 
-            Gdx.input.setInputProcessor(null); 
-            typeSound.resume(); 
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
+            if (state == State.PAUSED) { 
+                Gdx.input.setInputProcessor(stage); 
+                typeSound.pause(); 
+            } else { 
+                Gdx.input.setInputProcessor(null); 
+                typeSound.resume(); 
+            }
         }
-    }
 
-    if (state == State.RUNNING) updateGame(delta);
+        if (state == State.RUNNING) updateGame(delta);
 
-    Gdx.gl.glClearColor(0, 0, 0, 1);
-    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-    batch.setProjectionMatrix(stage.getCamera().combined);
-    batch.begin();
+        batch.setProjectionMatrix(stage.getCamera().combined);
+        batch.begin();
 
-    if (currentDialogueIndex < dialogueScreens.length) {
-        Texture currentTex = showControls ? dialogueScreens[5] : dialogueScreens[currentDialogueIndex];
-        batch.draw(currentTex, 0, 0, 1280, 720);
-    } else {
-        batch.draw(currentArea == 1 ? background1 : background2, 0, 0, 1280, 720);
-        player.draw(batch);
-        
-        // --- UPDATED THIS SECTION ---
-        if (showEnterSign) {
-            // Draw starting at bottom-left (0,0) and stretching to full screen (1280x720)
-            batch.draw(enterSign, 0, 0, 1280, 720); 
+        if (currentDialogueIndex < dialogueScreens.length) {
+            Texture currentTex = showControls ? dialogueScreens[5] : dialogueScreens[currentDialogueIndex];
+            batch.draw(currentTex, 0, 0, 1280, 720);
+        } else {
+            batch.draw(currentArea == 1 ? background1 : background2, 0, 0, 1280, 720);
+            player.draw(batch);
+            if (showEnterSign) {
+                // FIXED: Overlaying the sign fully over the screen
+                batch.draw(enterSign, 0, 0, 1280, 720); 
+            }
         }
-        // -----------------------------
+
+        if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
+
+        if (fadeAlpha > 0) {
+            batch.setColor(0, 0, 0, fadeAlpha);
+            batch.draw(pauseBg, 0, 0, 1280, 720);
+            batch.setColor(1, 1, 1, 1);
+        }
+        batch.end();
+
+        inventory.handleInput();
+        inventory.render(delta);
+
+        if (state == State.PAUSED) { stage.act(delta); stage.draw(); }
     }
 
-    if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
-
-    if (fadeAlpha > 0) {
-        batch.setColor(0, 0, 0, fadeAlpha);
-        batch.draw(pauseBg, 0, 0, 1280, 720);
-        batch.setColor(1, 1, 1, 1);
-    }
-    batch.end();
-
-    inventory.handleInput();
-    inventory.render(delta);
-
-    if (state == State.PAUSED) { stage.act(delta); stage.draw(); }
-}
     private void updateGame(float delta) {
         if (showControls) return;
 
@@ -214,19 +205,19 @@ public void render(float delta) {
         } else {
             player.update(delta);
 
+            // UPDATED: Moving the player hitbox along with Theo
+            playerBounds.set(player.x + 470, player.y + 40, 60, 400);
+
             if (currentArea == 1 && player.x > 1275) {
-    currentArea = 2; 
-    player.x = -100; // Changed from -150 to -100 (further from the edge)
-   
-} 
-else if (currentArea == 2 && player.x < -160) {
-    currentArea = 1; 
-    player.x = 1200; // Changed from 1300 to 1200 (further from the edge)
-    
-}
+                currentArea = 2; 
+                player.x = -100;
+            } else if (currentArea == 2 && player.x < -160) {
+                currentArea = 1; 
+                player.x = 1200;
+            }
+
             showEnterSign = false;
             if (currentArea == 1) {
-                playerBounds.set(player.x + 150, player.y + 40, 200, 400); 
                 if (playerBounds.overlaps(door1Bounds)) {
                     showEnterSign = true;
                 }

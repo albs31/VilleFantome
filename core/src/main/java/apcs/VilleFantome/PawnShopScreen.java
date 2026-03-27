@@ -99,7 +99,49 @@ public class PawnShopScreen implements Screen {
         stage.addActor(resumeButton);
         stage.addActor(quitButton);
     }
+    
+/* entryDialogue = new DialogueManager(
+            new String[] {
+                "theodialogue1.png",  // shows for 3 seconds
+                "theodialogue2.png",  // wait for E
+                "theodialogue3.png"   // shows for 2 seconds
+            },
+            new float[] {
+                3.0f,  // 3 seconds then auto advance
+                0f,    // wait for player to press E
+                2.0f   // 2 seconds then done
+            },
+            () -> {
+                // entry dialogue done — player can now move
+            }
+        );
+        entryDialogue.start(); // ← starts right when screen opens
 
+        // ═══════════════════════════════════════════
+        // SEQUENCE 2 — plays after evidence is picked up
+        // triggered manually in updateGame() below
+        // ═══════════════════════════════════════════
+        postEvidenceDialogue = new DialogueManager(
+            new String[] {
+                "theodialogue4.png",  // wait for E
+                "theodialogue5.png",  // shows for 4 seconds
+                "theodialogue6.png"   // wait for E
+            },
+            new float[] {
+                0f,    // wait for E
+                4.0f,  // 4 seconds
+                0f     // wait for E then done
+            },
+            () -> {
+                // post evidence dialogue done
+                // e.g. unlock next room, trigger something else
+            }
+        );
+        // ← do NOT call .start() here, it triggers after evidence
+
+        setupPauseMenu();
+    } */
+    
     @Override
     public void render(float delta) {
         if (state == State.EVIDENCE) {

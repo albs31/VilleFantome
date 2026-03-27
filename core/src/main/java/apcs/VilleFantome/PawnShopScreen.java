@@ -26,17 +26,20 @@ public class PawnShopScreen implements Screen {
     private State state = State.RUNNING;
 
     private Texture pawnShop1, pawnShop2, pauseBg, resumeTex, quitTex, exitSign;
-    private Texture pickupPrompt, evidenceTex;
+    private Texture pickupPrompt, evidenceTex1, evidenceTex2;
     private ImageButton resumeButton, quitButton;
 
     private int currentRoom = 1;
-    private Rectangle playerBounds, exitHitbox, itemHitbox;
+    private Rectangle playerBounds, exitHitbox, itemHitbox1, itemHitbox2;
     private boolean showExitSign = false;
     private boolean showPickupPrompt = false;
-
+    private boolean item1PickedUp = false;
+    private boolean item2PickedUp = false;
+    private int evidenceToShow = 0; // 1 = pocketwatch, 2 = diary entry
+    
     private float movementDelayTimer = 0f;
     private final float MAX_DELAY = 0.04f;
-
+    
     private float returnX, returnY;
 
     public PawnShopScreen(Main game, float x, float y) {
@@ -59,16 +62,18 @@ public class PawnShopScreen implements Screen {
         quitTex = new Texture("quitbutton.png");
         exitSign = new Texture("exitsign.png");
         pickupPrompt = new Texture("pickupitem.png");
-        evidenceTex = new Texture("Diary Entry1.png");
+        evidenceTex1 = new Texture("Evidence_In_Pawn_Shop.png");
+        evidenceTex2 = new Texture("Diary Entry1.png");
 
-        player = new Player(20, -100);
-        currentRoom = 1;
+        player = new Player(20, -100); 
+        currentRoom = 1; 
         player.setDrawSize(1000, 1000);
-        player.setSpeed(335.0f);
+        player.setSpeed(335.0f); 
 
         playerBounds = new Rectangle();
         exitHitbox = new Rectangle(1000, 0, 280, 720);
-        itemHitbox = new Rectangle(500, 0, 120, 300);
+        itemHitbox1 = new Rectangle(500, 0, 120, 300); // adjust to match item location
+        itemHitbox2 = new Rectangle(800, 0, 120, 300);
 
         setupPauseMenu();
     }
@@ -91,57 +96,14 @@ public class PawnShopScreen implements Screen {
         quitButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                SaveManager.save(returnX, returnY, 1, 7, "pawnshop");
-                game.setScreen(new LoadingScreen(game));
+                game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
             }
         });
 
         stage.addActor(resumeButton);
         stage.addActor(quitButton);
     }
-    
-/* entryDialogue = new DialogueManager(
-            new String[] {
-                "theodialogue1.png",  // shows for 3 seconds
-                "theodialogue2.png",  // wait for E
-                "theodialogue3.png"   // shows for 2 seconds
-            },
-            new float[] {
-                3.0f,  // 3 seconds then auto advance
-                0f,    // wait for player to press E
-                2.0f   // 2 seconds then done
-            },
-            () -> {
-                // entry dialogue done — player can now move
-            }
-        );
-        entryDialogue.start(); // ← starts right when screen opens
 
-        // ═══════════════════════════════════════════
-        // SEQUENCE 2 — plays after evidence is picked up
-        // triggered manually in updateGame() below
-        // ═══════════════════════════════════════════
-        postEvidenceDialogue = new DialogueManager(
-            new String[] {
-                "theodialogue4.png",  // wait for E
-                "theodialogue5.png",  // shows for 4 seconds
-                "theodialogue6.png"   // wait for E
-            },
-            new float[] {
-                0f,    // wait for E
-                4.0f,  // 4 seconds
-                0f     // wait for E then done
-            },
-            () -> {
-                // post evidence dialogue done
-                // e.g. unlock next room, trigger something else
-            }
-        );
-        // ← do NOT call .start() here, it triggers after evidence
-
-        setupPauseMenu();
-    } */
-    
     @Override
     public void render(float delta) {
         if (state == State.EVIDENCE) {
@@ -168,7 +130,11 @@ public class PawnShopScreen implements Screen {
         if (currentRoom == 2 && showExitSign) batch.draw(exitSign, 0, 0, 1280, 720);
         if (showPickupPrompt) batch.draw(pickupPrompt, 0, 0, 1280, 720);
         if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
-        if (state == State.EVIDENCE) batch.draw(evidenceTex, 0, 0, 1280, 720);
+        if (state == State.EVIDENCE) {
+            if (evidenceToShow == 1) batch.draw(evidenceTex1, 0, 0, 1280, 720);
+            if (evidenceToShow == 2) batch.draw(evidenceTex2, 0, 0, 1280, 720);
+        }
+
 
         batch.end();
 
@@ -191,26 +157,34 @@ public class PawnShopScreen implements Screen {
         showPickupPrompt = false;
 
         if (currentRoom == 1) {
-            if (!Inventory.hasItem("Diary Entry 1") && playerBounds.overlaps(itemHitbox)) {
+            if (!item1PickedUp && playerBounds.overlaps(itemHitbox1)) {
                 showPickupPrompt = true;
                 if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-                    Inventory.addItem("Diary Entry 1", "Diary Entry1.png");
+                    Inventory.addItem("Pocketwatch", "Evidence_In_Pawn_Shop.png");
+                    item1PickedUp = true;
+                    evidenceToShow = 1;
                     state = State.EVIDENCE;
                 }
             }
 
-            if (player.x < -300) player.x = -300;
-            if (player.x >= 1100) {
+            if (player.x < -300) player.x = -300; 
+            if (player.x >= 1100) { 
                 currentRoom = 2;
-                player.x = -270;
+                player.x = -270;    
             }
         } else if (currentRoom == 2) {
             if (playerBounds.overlaps(exitHitbox)) showExitSign = true;
+            if (!item2PickedUp && playerBounds.overlaps(itemHitbox2)) {
+                showPickupPrompt = true;
+                if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                    Inventory.addItem("Diary Entry 2", "Diary Entry1.png");
+                    item2PickedUp = true;
+                    evidenceToShow = 2;
+                    state = State.EVIDENCE;
+                }
+            }
             if (player.x <= -275) { currentRoom = 1; player.x = 850; }
-
-            if (player.x > 900) {
-    game.setScreen(new GameScreen(game, true, 460, 20, 1)); // ← y=20 matches new game spawn height
-}
+            if (player.x > 900) game.setScreen(new GameScreen(game, true, returnX, returnY, 1));
         }
     }
 
@@ -222,6 +196,6 @@ public class PawnShopScreen implements Screen {
         batch.dispose(); stage.dispose(); inventory.dispose(); player.dispose();
         pawnShop1.dispose(); pawnShop2.dispose(); pauseBg.dispose();
         resumeTex.dispose(); quitTex.dispose(); exitSign.dispose();
-        pickupPrompt.dispose(); evidenceTex.dispose();
+        pickupPrompt.dispose(); evidenceTex1.dispose(); evidenceTex2.dispose();
     }
 }

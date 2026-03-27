@@ -49,7 +49,6 @@ public class PawnShopScreen implements Screen {
 
     private float returnX, returnY;
 
-    // Static variables — survive screen transitions
     private static boolean hasVisitedBefore = false;
     private static boolean item1AlreadyPickedUp = false;
     private static boolean item2AlreadyPickedUp = false;
@@ -126,11 +125,10 @@ public class PawnShopScreen implements Screen {
             }
         );
 
-        // Restore pickup state from previous visit
         item1PickedUp = item1AlreadyPickedUp;
         item2PickedUp = item2AlreadyPickedUp;
 
-        // Skip entry dialogue if already visited
+        // skip dialogue if already visited
         if (hasVisitedBefore) {
             state = State.RUNNING;
         } else {
@@ -286,4 +284,3 @@ public class PawnShopScreen implements Screen {
         entryDialogue.dispose(); postEvidenceDialogue.dispose(); postEvidence2Dialogue.dispose();
     }
 }
-

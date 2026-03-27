@@ -43,7 +43,7 @@ public class GameScreen implements Screen {
     private float fadeAlpha = 1.0f;
     private float fadeSpeed = 3.5f;
 
-    private Rectangle door1Bounds, playerBounds;
+    private Rectangle door1Bounds, door2Bounds, playerBounds; 
     private boolean showEnterSign = false;
 
     private float movementDelayTimer = 0.0f;
@@ -73,7 +73,6 @@ public class GameScreen implements Screen {
         quitTex = new Texture("quitbutton.png");
         enterSign = new Texture("entersign.png");
 
-        // RESTORED: Initializing the dialogue arrays
         dialogueScreens = new Texture[] {
             new Texture("Narrator_box1.png"), new Texture("Theo_Diary_Entry1.png"),
             new Texture("Narrator_box2.png"), new Texture("Theo_dialogue_2.png"),
@@ -98,8 +97,9 @@ public class GameScreen implements Screen {
             }
         }
 
-        // INITIALIZED: Creating the rectangle objects to prevent NullPointerException
+        // Initialize Door Hitboxes
         door1Bounds = new Rectangle(930, 10, 10, 180); 
+        door2Bounds = new Rectangle(1230, 10, 10, 180); // Leads to Previous Room
         playerBounds = new Rectangle();
 
         setupPauseMenu();
@@ -161,7 +161,6 @@ public class GameScreen implements Screen {
             batch.draw(currentArea == 1 ? background1 : background2, 0, 0, 1280, 720);
             player.draw(batch);
             if (showEnterSign) {
-                // FIXED: Overlaying the sign fully over the screen
                 batch.draw(enterSign, 0, 0, 1280, 720); 
             }
         }
@@ -204,8 +203,6 @@ public class GameScreen implements Screen {
             movementDelayTimer += delta;
         } else {
             player.update(delta);
-
-            // UPDATED: Moving the player hitbox along with Theo
             playerBounds.set(player.x + 470, player.y + 40, 60, 400);
 
             if (currentArea == 1 && player.x > 1275) {
@@ -218,12 +215,20 @@ public class GameScreen implements Screen {
 
             showEnterSign = false;
             if (currentArea == 1) {
+                // Check Door 1 (Pawn Shop)
                 if (playerBounds.overlaps(door1Bounds)) {
                     showEnterSign = true;
+                    if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
+                        game.setScreen(new PawnShopScreen(game, player.x, player.y));
+                    }
                 }
 
-                if (showEnterSign && Gdx.input.isKeyJustPressed(Input.Keys.F)) {
-                    game.setScreen(new PawnShopScreen(game, player.x, player.y));
+                // Check Door 2 (Previous Room)
+                if (playerBounds.overlaps(door2Bounds)) {
+                    showEnterSign = true;
+                    if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
+                        game.setScreen(new PreviousRoomScreen(game, player.x, player.y));
+                    }
                 }
             }
         }

@@ -159,7 +159,10 @@ public class Mansion implements Screen {
     showPickupPrompt = false;
 
     if (currentRoom == 1) {
-        if (player.x < -300) player.x = -300;
+        if (player.x < -435) {
+            game.setScreen(new GameScreen(game, true, returnX, returnY, 2));
+            return;
+}
 
         if (!item1PickedUp && playerBounds.overlaps(itemHitbox1)) {
             showPickupPrompt = true;

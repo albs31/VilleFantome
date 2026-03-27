@@ -138,55 +138,58 @@ public class GameScreen implements Screen {
     }
 
     @Override
-    public void render(float delta) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.Y)) showControls = !showControls;
-        if (fadeAlpha > 0) fadeAlpha = Math.max(0, fadeAlpha - delta * fadeSpeed);
+public void render(float delta) {
+    if (Gdx.input.isKeyJustPressed(Input.Keys.Y)) showControls = !showControls;
+    if (fadeAlpha > 0) fadeAlpha = Math.max(0, fadeAlpha - delta * fadeSpeed);
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
-            if (state == State.PAUSED) { 
-                Gdx.input.setInputProcessor(stage); 
-                typeSound.pause(); 
-            } else { 
-                Gdx.input.setInputProcessor(null); 
-                typeSound.resume(); 
-            }
+    if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+        state = (state == State.RUNNING) ? State.PAUSED : State.RUNNING;
+        if (state == State.PAUSED) { 
+            Gdx.input.setInputProcessor(stage); 
+            typeSound.pause(); 
+        } else { 
+            Gdx.input.setInputProcessor(null); 
+            typeSound.resume(); 
         }
-
-        if (state == State.RUNNING) updateGame(delta);
-
-        Gdx.gl.glClearColor(0, 0, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-        batch.setProjectionMatrix(stage.getCamera().combined);
-        batch.begin();
-
-        if (currentDialogueIndex < dialogueScreens.length) {
-            Texture currentTex = showControls ? dialogueScreens[5] : dialogueScreens[currentDialogueIndex];
-            batch.draw(currentTex, 0, 0, 1280, 720);
-        } else {
-            batch.draw(currentArea == 1 ? background1 : background2, 0, 0, 1280, 720);
-            player.draw(batch);
-            if (showEnterSign) {
-                batch.draw(enterSign, 350, 300, 800, 800);
-            }
-        }
-
-        if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
-
-        if (fadeAlpha > 0) {
-            batch.setColor(0, 0, 0, fadeAlpha);
-            batch.draw(pauseBg, 0, 0, 1280, 720);
-            batch.setColor(1, 1, 1, 1);
-        }
-        batch.end();
-
-        inventory.handleInput();
-        inventory.render(delta);
-
-        if (state == State.PAUSED) { stage.act(delta); stage.draw(); }
     }
 
+    if (state == State.RUNNING) updateGame(delta);
+
+    Gdx.gl.glClearColor(0, 0, 0, 1);
+    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+    batch.setProjectionMatrix(stage.getCamera().combined);
+    batch.begin();
+
+    if (currentDialogueIndex < dialogueScreens.length) {
+        Texture currentTex = showControls ? dialogueScreens[5] : dialogueScreens[currentDialogueIndex];
+        batch.draw(currentTex, 0, 0, 1280, 720);
+    } else {
+        batch.draw(currentArea == 1 ? background1 : background2, 0, 0, 1280, 720);
+        player.draw(batch);
+        
+        // --- UPDATED THIS SECTION ---
+        if (showEnterSign) {
+            // Draw starting at bottom-left (0,0) and stretching to full screen (1280x720)
+            batch.draw(enterSign, 0, 0, 1280, 720); 
+        }
+        // -----------------------------
+    }
+
+    if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
+
+    if (fadeAlpha > 0) {
+        batch.setColor(0, 0, 0, fadeAlpha);
+        batch.draw(pauseBg, 0, 0, 1280, 720);
+        batch.setColor(1, 1, 1, 1);
+    }
+    batch.end();
+
+    inventory.handleInput();
+    inventory.render(delta);
+
+    if (state == State.PAUSED) { stage.act(delta); stage.draw(); }
+}
     private void updateGame(float delta) {
         if (showControls) return;
 

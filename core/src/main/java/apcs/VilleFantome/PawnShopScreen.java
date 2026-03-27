@@ -25,11 +25,13 @@ public class PawnShopScreen implements Screen {
     private enum State { RUNNING, PAUSED }
     private State state = State.RUNNING;
 
-    private Texture pawnShop1, pawnShop2, pauseBg, resumeTex, quitTex;
+    private Texture pawnShop1, pawnShop2, pauseBg, resumeTex, quitTex, exitSign;
     private ImageButton resumeButton, quitButton;
 
     private int currentRoom = 1;
-    private Rectangle playerBounds;
+    private Rectangle playerBounds, exitHitbox;
+    private boolean showExitSign = false;
+    
     private float movementDelayTimer = 0f;
     private final float MAX_DELAY = 0.04f;
     
@@ -53,15 +55,20 @@ public class PawnShopScreen implements Screen {
         pauseBg = new Texture("pause_screen.png");
         resumeTex = new Texture("resume_button.png");
         quitTex = new Texture("quitbutton.png");
+        exitSign = new Texture("exitsign.png");
 
-        player = new Player(400, -100); 
+        // Spawn on the left side of the first room
+        player = new Player(20, -100); 
         currentRoom = 1; 
         
-        // Boost size and speed together
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f); 
 
         playerBounds = new Rectangle();
+        
+        // Hitbox for the exit sign: only the leftmost 20 pixels
+        exitHitbox = new Rectangle(1000, 0, 280, 720); 
+
         setupPauseMenu();
     }
 
@@ -105,8 +112,16 @@ public class PawnShopScreen implements Screen {
 
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
+        
+        // Draw background based on current room
         batch.draw(currentRoom == 1 ? pawnShop1 : pawnShop2, 0, 0, 1280, 720);
+        
         player.draw(batch);
+
+        // Layer the exit sign over the entire screen if triggered in Room 2
+        if (currentRoom == 2 && showExitSign) {
+            batch.draw(exitSign, 0, 0, 1280, 720); 
+        }
 
         if (state == State.PAUSED) batch.draw(pauseBg, 0, 0, 1280, 720);
         batch.end();
@@ -118,7 +133,6 @@ public class PawnShopScreen implements Screen {
     }
 
     private void updateGame(float delta) {
-        // Handle spawn delay
         if (movementDelayTimer < MAX_DELAY) {
             movementDelayTimer += delta;
             return;
@@ -127,23 +141,32 @@ public class PawnShopScreen implements Screen {
         player.update(delta);
         playerBounds.set(player.x + 170, player.y + 40, 140, 260);
 
+        showExitSign = false;
+
         if (currentRoom == 1) {
             if (player.x < -300) player.x = -300; 
-            if (player.x >= 1150) { 
+            
+            // GO TO ROOM 2
+            if (player.x >= 1100) { 
                 currentRoom = 2;
-                player.x = -282;    
-                movementDelayTimer = 0f;
+                player.x = -270;    
             }
         } 
         else if (currentRoom == 2) {
-            if (player.x <= -280) { 
-                currentRoom = 1;
-                player.x = 1100;    
-                movementDelayTimer = 0f;
+            // SHOW EXIT SIGN (When near the right side)
+            if (playerBounds.overlaps(exitHitbox)) {
+                showExitSign = true;
             }
 
-            // Automatic Exit to Town
-            if (player.x > 930) { 
+            // RETURN TO ROOM 1 (Walking Left)
+            if (player.x <= -275) { 
+                currentRoom = 1;
+                player.x = 850; // Set this slightly lower than the Room 2 trigger
+            }
+
+            // RETURN TO TOWN (Walking Right)
+            // Increased this to 1150 so it doesn't trigger accidentally
+            if (player.x > 900) { 
                 game.setScreen(new GameScreen(game, true, returnX, returnY));
             }
         }
@@ -156,6 +179,6 @@ public class PawnShopScreen implements Screen {
     @Override public void dispose() {
         batch.dispose(); stage.dispose(); inventory.dispose(); player.dispose();
         pawnShop1.dispose(); pawnShop2.dispose(); pauseBg.dispose();
-        resumeTex.dispose(); quitTex.dispose();
+        resumeTex.dispose(); quitTex.dispose(); exitSign.dispose();
     }
 }

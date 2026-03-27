@@ -89,7 +89,7 @@ public class PreviousRoomScreen implements Screen {
         evidenceTex3 = new Texture("scrapped letter 1.png");
         evidenceTex4 = new Texture("Scrapped letter 2.png");
 
-        player = new Player(-200, -100);
+        player = new Player(-300, -100); 
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f);
 
@@ -112,8 +112,10 @@ public class PreviousRoomScreen implements Screen {
 
         // DIALOGUE 2 — after evidence 1
         postEvidence1Dialogue = new DialogueManager(
-            new String[] { "Theo'sOldRoomDialogue .png" },
-            new float[]  { 0f },
+            new String[] { "Theo'sOldRoomDialogue3.png",
+                "Theo'sOldRoomDialogue5.png"
+             },
+            new float[]  { 0f, 0f },
             () -> {
                 activeDialogue = null;
                 state = State.RUNNING;
@@ -122,7 +124,7 @@ public class PreviousRoomScreen implements Screen {
 
         // DIALOGUE 3 — after evidence 2
         postEvidence2Dialogue = new DialogueManager(
-            new String[] { "Theo'sOldRoomDialogue3.png" },
+            new String[] { "Theo'sOldRoomDialogue6.png" },
             new float[]  { 0f },
             () -> {
                 activeDialogue = null;
@@ -132,7 +134,7 @@ public class PreviousRoomScreen implements Screen {
 
         // DIALOGUE 4 — after evidence 3
         postEvidence3Dialogue = new DialogueManager(
-            new String[] { "Theo'sOldRoomDialogue2.png" },
+            new String[] { "ScrappedLetterDialogue1.png" },
             new float[]  { 0f },
             () -> {
                 activeDialogue = null;
@@ -142,24 +144,17 @@ public class PreviousRoomScreen implements Screen {
 
         // DIALOGUE 5 — after evidence 4, then immediately triggers dialogue 6
         postEvidence4Dialogue = new DialogueManager(
-            new String[] { "Theo'sOldRoomDialogue5.png" },
-            new float[]  { 0f },
-            () -> {
-                startDialogue(finalDialogue); // automatically chains into dialogue 6
-            }
-        );
-
-        // DIALOGUE 6 — final, plays right after dialogue 5
-        finalDialogue = new DialogueManager(
-            new String[] { "Theo'sOldRoomDialogue6.png" },
-            new float[]  { 0f },
+            new String[] { "Theo'sOldRoomDialogue2.png",
+                "Theo'sOldRoomDialogue7.png"
+             },
+            new float[]  { 0f, 0f },
             () -> {
                 activeDialogue = null;
                 state = State.RUNNING;
             }
         );
 
-        state = State.WAITING;
+
 
         setupPauseMenu();
     }

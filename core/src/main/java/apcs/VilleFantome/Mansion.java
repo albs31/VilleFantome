@@ -148,50 +148,64 @@ public class Mansion implements Screen {
     }
 
     private void updateGame(float delta) {
-        if (movementDelayTimer < MAX_DELAY) {
-            movementDelayTimer += delta;
-            return;
-        }
+    if (movementDelayTimer < MAX_DELAY) {
+        movementDelayTimer += delta;
+        return;
+    }
 
-        player.update(delta);
-        playerBounds.set(player.x + 170, player.y + 40, 140, 260);
+    player.update(delta);
+    playerBounds.set(player.x + 170, player.y + 40, 140, 260);
 
+    showPickupPrompt = false;
+
+    if (currentRoom == 1) {
         if (player.x < -300) player.x = -300;
 
-        showPickupPrompt = false;
-
-        if (currentRoom == 1) {
-            if (!item1PickedUp && playerBounds.overlaps(itemHitbox1)) {
-                showPickupPrompt = true;
-                if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-                    Inventory.addItem("Diary Entry 3", "Diary Entry 3.png");
-                    item1PickedUp = true;
-                    evidenceToShow = 1;
-                    state = State.EVIDENCE;
-                }
+        if (!item1PickedUp && playerBounds.overlaps(itemHitbox1)) {
+            showPickupPrompt = true;
+            if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                Inventory.addItem("Diary Entry 3", "Diary Entry 3.png");
+                item1PickedUp = true;
+                evidenceToShow = 1;
+                state = State.EVIDENCE;
             }
-            if (player.x > 900) {
-                currentRoom = 2;
-                player.x = -250;
-            }
-        } else if (currentRoom == 2) {
-            if (!item2PickedUp && playerBounds.overlaps(itemHitbox2)) {
-                showPickupPrompt = true;
-                if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-                    Inventory.addItem("Final Diary Entry", "FinalDiaryEntry.png");
-                    item2PickedUp = true;
-                    evidenceToShow = 2;
-                    state = State.EVIDENCE;
-                }
-            }
-            if (player.x > 900) {
-                currentRoom = 3;
-                player.x = -250;
-            }
-        } else if (currentRoom == 3) {
-            if (player.x > 900) player.x = 900;
         }
+
+        if (player.x > 900) {
+            currentRoom = 2;
+            player.x = -250;
+        }
+
+    } else if (currentRoom == 2) {
+        if (player.x < -400) {
+            currentRoom = 1;
+            player.x = 850;
+        }
+
+        if (!item2PickedUp && playerBounds.overlaps(itemHitbox2)) {
+            showPickupPrompt = true;
+            if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                Inventory.addItem("Final Diary Entry", "FinalDiaryEntry.png");
+                item2PickedUp = true;
+                evidenceToShow = 2;
+                state = State.EVIDENCE;
+            }
+        }
+
+        if (player.x > 900) {
+            currentRoom = 3;
+            player.x = -250;
+        }
+
+    } else if (currentRoom == 3) {
+        if (player.x < -400) {
+            currentRoom = 2;
+            player.x = 850;
+        }
+
+        if (player.x > 900) player.x = 900;
     }
+}
 
     @Override
     public void resize(int w, int h) { stage.getViewport().update(w, h, true); }

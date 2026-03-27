@@ -26,11 +26,10 @@ public class Mansion implements Screen {
     private State state = State.RUNNING;
 
     private Texture mansion3, mansion1, mansion2;
-    private Texture pauseBg, resumeTex, quitTex, exitSign;
+    private Texture pauseBg, resumeTex, quitTex;
     private ImageButton resumeButton, quitButton;
 
-    private Rectangle playerBounds, exitHitbox;
-    private boolean showExitSign = false;
+    private Rectangle playerBounds;
 
     private float movementDelayTimer = 0f;
     private final float MAX_DELAY = 0.04f;
@@ -60,19 +59,12 @@ public class Mansion implements Screen {
         pauseBg = new Texture("pause_screen.png");
         resumeTex = new Texture("resume_button.png");
         quitTex = new Texture("quitbutton.png");
-        exitSign = new Texture("exitsign.png");
 
-        // Spawn at left side of first mansion room
         player = new Player(20, -100);
-
-        // Resize / speed inside mansion
         player.setDrawSize(1000, 1000);
         player.setSpeed(335.0f);
 
         playerBounds = new Rectangle();
-
-        // Right-side exit trigger area
-        exitHitbox = new Rectangle(1000, 0, 280, 720);
 
         setupPauseMenu();
     }
@@ -93,12 +85,12 @@ public class Mansion implements Screen {
         quitButton.setPosition(500, 200);
         quitButton.setSize(300, 120);
         quitButton.addListener(new ClickListener() {
-    @Override
-    public void clicked(InputEvent event, float x, float y) {
-        SaveManager.save(player.x, player.y, 2, 7, "mansion");
-game.setScreen(new LoadingScreen(game));
-    }
-});
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                SaveManager.save(returnX, returnY, 2, 7, "mansion");
+                game.setScreen(new LoadingScreen(game));
+            }
+        });
 
         stage.addActor(resumeButton);
         stage.addActor(quitButton);
@@ -129,10 +121,6 @@ game.setScreen(new LoadingScreen(game));
 
         player.draw(batch);
 
-        if (showExitSign && currentRoom == 3) {
-            batch.draw(exitSign, 0, 0, 1280, 720);
-        }
-
         if (state == State.PAUSED) {
             batch.draw(pauseBg, 0, 0, 1280, 720);
         }
@@ -155,51 +143,30 @@ game.setScreen(new LoadingScreen(game));
         }
 
         player.update(delta);
-
-        // Adjust if Theo's collision feels off
         playerBounds.set(player.x + 170, player.y + 40, 140, 260);
 
-        showExitSign = false;
+        // Left barrier — applies to all rooms
+        if (player.x < -300) player.x = -300;
 
-        // Prevent him from going too far left
-        if (player.x < -300) {
-            player.x = -300;
-        }
-
-        // Move between mansion rooms
-        if (player.x > 900) {
-            if (currentRoom == 1) {
+        if (currentRoom == 1) {
+            if (player.x > 900) {
                 currentRoom = 2;
                 player.x = -250;
-                return;
-            } else if (currentRoom == 2) {
+            }
+        } else if (currentRoom == 2) {
+            if (player.x > 900) {
                 currentRoom = 3;
                 player.x = -250;
-                return;
             }
-        }
-
-        // Show exit sign only in final mansion room
-        if (currentRoom == 3 && playerBounds.overlaps(exitHitbox)) {
-            showExitSign = true;
-        }
-
-        // Exit final room back to town screen 2
-        if (currentRoom == 3 && player.x > 900) {
-            game.setScreen(new GameScreen(game, true, returnX, returnY, 2));
+        } else if (currentRoom == 3) {
+            // ← blocked, no exit — right barrier keeps player inside
+            if (player.x > 900) player.x = 900;
         }
     }
 
     @Override
-    public void resize(int w, int h) {
-        stage.getViewport().update(w, h, true);
-    }
-
-    @Override
-    public void hide() {
-        Gdx.input.setInputProcessor(null);
-    }
-
+    public void resize(int w, int h) { stage.getViewport().update(w, h, true); }
+    @Override public void hide() { Gdx.input.setInputProcessor(null); }
     @Override public void pause() {}
     @Override public void resume() {}
 
@@ -209,14 +176,11 @@ game.setScreen(new LoadingScreen(game));
         stage.dispose();
         inventory.dispose();
         player.dispose();
-
         mansion3.dispose();
         mansion1.dispose();
         mansion2.dispose();
-
         pauseBg.dispose();
         resumeTex.dispose();
         quitTex.dispose();
-        exitSign.dispose();
     }
 }

@@ -50,13 +50,11 @@ public class DialogueManager {
         if (!active) return;
 
         if (waitingForInput) {
-            // Advance forward
             if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) || 
                 Gdx.input.isKeyJustPressed(Input.Keys.E) || 
                 Gdx.input.justTouched()) {
                 advance();
             }
-            // Go back
             if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
                 goBack();
             }

@@ -44,6 +44,7 @@ public class LoadingScreen implements Screen {
             }
         });
 
+
         // save button
         saveTex = new Texture("save_button.png");
         ImageButton saveButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(saveTex)));

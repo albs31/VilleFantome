@@ -1,0 +1,15 @@
+
+{
+    "platform": "windows64",
+    "jdk": "OpenJDK25U-jdk_x64_windows_hotspot_25.0.2_10.zip",
+    "executable": "VilleFantome",
+    "classpath": [
+        "lwjgl3/build/libs/VilleFantome-1.0.0.jar"
+    ],
+    "mainclass": "apcs.VilleFantome.lwjgl3.Lwjgl3Launcher",
+    "vmargs": [
+        "Xmx1G"
+    ],
+    "minimizejre": "soft",
+    "output": "VilleFantome_Windows"
+}
